@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Days Counter — Tax Residency Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --blue:#1565C0;--blue-lt:#E3F0FF;--blue-md:#90CAF9;
+    --red:#C62828;--red-lt:#FFEBEE;
+    --green:#2E7D32;--green-lt:#E8F5E9;
+    --yellow:#F9A825;--yellow-lt:#FFFDE7;
+    --orange:#E65100;--orange-lt:#FFF3E0;
+    --grey:#F5F7FA;--grey2:#E8ECF0;--grey3:#B0BEC5;
+    --ink:#1A1A2E;--ink2:#455A64;
+    --radius:14px;--shadow:0 2px 12px rgba(21,101,192,0.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'DM Sans',sans-serif;background:var(--grey);color:var(--ink);min-height:100vh;padding-bottom:110px}
+
+  /* ── HEADER / TABS ─────────────────────────── */
+  .header{background:var(--blue);color:#fff;padding:52px 20px 20px;text-align:center}
+  .header h1{font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px}
+  .header p{font-size:13px;opacity:0.8;margin-top:4px}
+  .tabs{display:flex;background:var(--blue);padding:0 6px;gap:3px}
+  .tab{flex:1;padding:9px 2px;border:none;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.75);
+    font-family:'DM Sans',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:0.2px;
+    text-transform:uppercase;border-radius:8px 8px 0 0;cursor:pointer;transition:all 0.2s}
+  .tab.active{background:var(--grey);color:var(--blue)}
+
+  /* ── SCREENS / CARDS ───────────────────────── */
+  .screen{display:none;padding:14px}.screen.active{display:block}
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+  .card-title{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);margin-bottom:12px}
+
+  /* ── HISTORY TABLE ─────────────────────────── */
+  .history-wrap{overflow-y:auto;max-height:calc(100vh - 260px);border-radius:10px;border:1.5px solid var(--grey2)}
+  .hist-table{width:100%;border-collapse:collapse;font-size:13px}
+  .hist-table thead th{position:sticky;top:0;background:var(--blue);color:#fff;padding:9px 10px;
+    text-align:left;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;z-index:2}
+  .hist-table thead th:last-child{text-align:center;width:38px}
+  .hist-table tbody tr{border-bottom:1px solid var(--grey2);transition:background 0.1s}
+  .hist-table tbody tr:last-child{border-bottom:none}
+  .hist-table tbody tr:hover{background:var(--blue-lt)}
+  .hist-table td{padding:9px 10px;vertical-align:middle}
+  .hist-table td.date-col{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink2);white-space:nowrap}
+  .hist-table td.city-col{font-weight:600;font-size:13px}
+  .hist-table td.country-col{font-size:12px;color:var(--ink2)}
+  .hist-table td.del-col{text-align:center}
+  .del-btn{background:none;border:none;color:var(--grey3);font-size:16px;cursor:pointer;padding:2px 4px;border-radius:4px;line-height:1}
+  .del-btn:active{color:var(--red)}
+
+  /* gap row */
+  .gap-row td{background:#FFF3E0;padding:7px 10px}
+  .gap-row td:first-child{font-family:'DM Mono',monospace;font-size:11px;color:var(--orange)}
+  .gap-badge{display:inline-flex;align-items:center;gap:5px;background:var(--orange);color:#fff;
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer}
+  .gap-banner{background:var(--orange-lt);border:1.5px solid #FFCC80;border-radius:10px;padding:10px 14px;
+    font-size:13px;color:var(--orange);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+  .gap-banner b{font-weight:700}
+
+  /* transit row tint */
+  .transit-row td{background:#FFFDE7}
+  .transit-row td.city-col{color:#7B6000;font-weight:500}
+
+  /* ── ENTRY FORM ────────────────────────────── */
+  .form-label{font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink2);margin-bottom:5px;display:block}
+  .form-input{width:100%;padding:11px 14px;border:1.5px solid var(--grey2);border-radius:10px;
+    font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink);background:#fff;
+    margin-bottom:12px;outline:none;transition:border-color 0.2s}
+  .form-input:focus{border-color:var(--blue)}
+
+  /* ── SEARCH / FAVOURITES ───────────────────── */
+  .search-results{border:1.5px solid var(--blue-md);border-radius:10px;overflow:hidden;margin-top:-8px;margin-bottom:12px;max-height:220px;overflow-y:auto}
+  .search-result-item{padding:10px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--grey2);
+    background:#fff;display:flex;align-items:center;gap:10px;transition:background 0.12s}
+  .search-result-item:last-child{border-bottom:none}
+  .search-result-item:active{background:var(--blue-lt)}
+  .search-result-item .ri{flex:1}
+  .city-name{font-weight:600;font-size:14px}.country-name{font-size:12px;color:var(--ink2)}
+  .fav-star{font-size:16px;color:var(--grey3);cursor:pointer;padding:2px 4px;border:none;background:none;flex-shrink:0}
+  .fav-star.active{color:var(--yellow)}
+
+  .favs-section{margin-bottom:12px}
+  .favs-label{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink2);margin-bottom:6px}
+  .favs-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .fav-chip{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;
+    background:var(--yellow-lt);border:1.5px solid #FFE082;font-size:13px;font-weight:600;
+    color:#5D4037;cursor:pointer;transition:all 0.15s}
+  .fav-chip:active{background:#FFE082}
+
+  /* ── BUTTONS ───────────────────────────────── */
+  .btn{width:100%;padding:14px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;
+    font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-bottom:8px}
+  .btn-primary{background:var(--blue);color:#fff}.btn-primary:active{background:#0d47a1}
+  .btn-travel{background:var(--yellow);color:#4A3900}
+  .btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+  .btn-sm{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+  .toggle-type{display:flex;background:var(--grey2);border-radius:10px;padding:3px;margin-bottom:14px}
+  .toggle-type button{flex:1;padding:8px;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;
+    font-size:12px;font-weight:600;cursor:pointer;background:none;color:var(--ink2);transition:all 0.2s}
+  .toggle-type button.active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,0.1)}
+
+  /* ── STATS ─────────────────────────────────── */
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .summary-tile{background:var(--grey);border-radius:10px;padding:12px;text-align:center}
+  .summary-tile .big{font-family:'DM Serif Display',serif;font-size:36px;color:var(--blue);line-height:1}
+  .summary-tile .lbl{font-size:11px;color:var(--ink2);margin-top:4px;font-weight:500}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--grey2)}
+  .stat-row:last-child{border-bottom:none}
+  .stat-label{display:flex;align-items:center;gap:8px;font-size:14px;max-width:155px;overflow:hidden}
+  .stat-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;min-width:36px;text-align:right}
+  .bar-bg{height:6px;background:var(--grey2);border-radius:3px;width:70px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:3px}
+  .pct-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink2);min-width:36px;text-align:right}
+  .year-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .year-tab{padding:6px 12px;border-radius:20px;border:1.5px solid var(--grey2);background:#fff;
+    font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+  .year-tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+  /* ── MISC ──────────────────────────────────── */
+  .info-box{background:var(--blue-lt);border:1.5px solid var(--blue-md);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--blue);margin-bottom:10px}
+  .api-setup{background:var(--blue-lt);border-radius:var(--radius);padding:14px;margin-bottom:14px;border:1.5px solid var(--blue-md)}
+  .api-setup p{font-size:13px;color:var(--blue);margin-bottom:8px}
+  .api-key-row{display:flex;gap:8px}
+  .api-key-row input{flex:1;padding:9px 12px;border:1.5px solid var(--blue-md);border-radius:8px;font-size:13px;font-family:'DM Mono',monospace;background:#fff}
+  .searching-indicator{display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;color:var(--ink2)}
+  .dot-anim{display:flex;gap:4px}
+  .dot-anim span{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:bounce 1.2s infinite ease-in-out}
+  .dot-anim span:nth-child(2){animation-delay:0.2s}.dot-anim span:nth-child(3){animation-delay:0.4s}
+  @keyframes bounce{0%,80%,100%{transform:scale(0.5);opacity:0.4}40%{transform:scale(1);opacity:1}}
+  .section-header{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);margin:14px 0 8px;padding:0 4px}
+  .empty-state{text-align:center;padding:32px 16px;color:var(--ink2)}
+  .empty-state .icon{font-size:40px;margin-bottom:8px}
+  .range-row{display:flex;gap:8px;margin-bottom:12px}
+  .range-row>div{flex:1}
+  .range-label{font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:5px}
+  .chip{display:inline-flex;align-items:center;gap:4px;background:var(--blue-lt);color:var(--blue);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600}
+  .toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+    padding:10px 20px;border-radius:24px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;
+    transition:all 0.3s;z-index:999;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ── EXPORT ────────────────────────────────── */
+  .export-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .export-btn{padding:14px 8px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:12px;
+    font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;
+    transition:all 0.15s;border:2px solid transparent}
+  .export-btn .ico{font-size:26px}
+  .export-btn.xlsx-btn{background:#E8F5E9;color:#2E7D32;border-color:#A5D6A7}
+  .export-btn.csv-btn{background:#FFFDE7;color:#F57F17;border-color:#FFE082}
+  .export-btn.pdf-btn{background:#FFEBEE;color:#C62828;border-color:#FFCDD2}
+  .export-btn.json-btn{background:var(--blue-lt);color:var(--blue);border-color:var(--blue-md)}
+  .export-btn:active{opacity:0.7;transform:scale(0.97)}
+  .period-selector{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+  .period-btn{padding:14px 10px;border:2px solid var(--grey2);border-radius:12px;background:#fff;
+    cursor:pointer;text-align:center;transition:all 0.2s;font-family:'DM Sans',sans-serif}
+  .period-btn .p-icon{font-size:24px}
+  .period-btn .p-title{font-size:13px;font-weight:700;color:var(--ink);margin-top:4px}
+  .period-btn .p-sub{font-size:11px;color:var(--ink2);margin-top:2px}
+  .period-btn.selected{border-color:var(--blue);background:var(--blue-lt)}
+  .period-btn.selected .p-title{color:var(--blue)}
+  .year-input-row{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+  .year-input-row label{font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap}
+  .year-input-row input{flex:1;padding:9px 12px;border:1.5px solid var(--grey2);border-radius:8px;font-size:15px;font-family:'DM Mono',monospace;text-align:center}
+  .period-hint{font-size:11px;color:var(--ink2)}
+  .modal-overlay{position:fixed;inset:0;background:rgba(26,26,46,0.55);z-index:500;display:none;
+    align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:18px;width:100%;max-width:480px}
+  .modal-header{background:var(--blue);color:#fff;padding:20px;display:flex;align-items:center;
+    justify-content:space-between;border-radius:18px 18px 0 0}
+  .modal-header h2{font-family:'DM Serif Display',serif;font-size:20px}
+  .modal-close{background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;
+    border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .modal-body{padding:16px}
+
+  /* ── LOG FILTER BAR ────────────────────────── */
+  .filter-bar{display:flex;gap:6px;margin-bottom:10px;align-items:center}
+  .filter-bar input{flex:1;padding:8px 12px;border:1.5px solid var(--grey2);border-radius:8px;
+    font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+  .filter-bar input:focus{border-color:var(--blue)}
+  .gap-toggle{padding:6px 12px;border-radius:8px;border:1.5px solid var(--grey2);background:#fff;
+    font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ink2);white-space:nowrap;transition:all 0.2s}
+  .gap-toggle.on{background:var(--orange-lt);border-color:#FFCC80;color:var(--orange)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌍 Days Counter</h1>
+  <p>Tax Residency &amp; Travel Tracker</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showScreen('log')">History</button>
+  <button class="tab" onclick="showScreen('add')">+ Add</button>
+  <button class="tab" onclick="showScreen('stats')">Stats</button>
+  <button class="tab" onclick="showScreen('export')">Export</button>
+  <button class="tab" onclick="showScreen('settings')">⚙</button>
+</div>
+
+<!-- ═══ LOG / HISTORY ═══ -->
+<div id="screen-log" class="screen active">
+  <div class="card" style="padding-bottom:8px">
+    <div class="section-header" style="margin-top:0">Today</div>
+    <div id="today-status"></div>
+  </div>
+
+  <!-- Gap banner -->
+  <div id="gap-banner" style="display:none"></div>
+
+  <div class="card" style="padding:12px">
+    <div class="filter-bar">
+      <input type="text" id="hist-filter" placeholder="🔍 Filter city or country…" oninput="renderHistory()">
+      <button class="gap-toggle" id="gap-toggle-btn" onclick="toggleGapFilter()">⚠ Gaps</button>
+    </div>
+    <div class="history-wrap">
+      <table class="hist-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>City</th>
+            <th>Country</th>
+            <th>×</th>
+          </tr>
+        </thead>
+        <tbody id="hist-body"></tbody>
+      </table>
+    </div>
+    <div id="hist-count" style="font-size:11px;color:var(--ink2);text-align:right;margin-top:6px;padding-right:4px"></div>
+  </div>
+</div>
+
+<!-- ═══ ADD ═══ -->
+<div id="screen-add" class="screen">
+  <div class="card">
+    <div class="card-title">Add Entry</div>
+    <div class="toggle-type">
+      <button class="active" onclick="setMode('single')" id="mode-single">Single</button>
+      <button onclick="setMode('range')" id="mode-range">Range</button>
+      <button onclick="setMode('travel')" id="mode-travel">✈ Transit</button>
+    </div>
+
+    <!-- SINGLE -->
+    <div id="single-mode">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="single-date">
+      <label class="form-label">City Search</label>
+      <input type="text" class="form-input" id="city-search" placeholder="Type any city…" oninput="onCitySearch(this.value,'single')" autocomplete="off">
+      <div id="search-results-single"></div>
+      <!-- Favourites -->
+      <div class="favs-section" id="favs-single"></div>
+      <div id="selected-city-single"></div>
+      <button class="btn btn-primary" onclick="saveSingle()">Save Night</button>
+    </div>
+
+    <!-- RANGE -->
+    <div id="range-mode" style="display:none">
+      <div class="range-row">
+        <div><div class="range-label">From</div><input type="date" class="form-input" id="range-from" style="margin-bottom:0"></div>
+        <div><div class="range-label">To</div><input type="date" class="form-input" id="range-to" style="margin-bottom:0"></div>
+      </div>
+      <div class="info-box" id="range-info" style="display:none;margin-top:10px"></div>
+      <label class="form-label" style="margin-top:10px">City Search</label>
+      <input type="text" class="form-input" id="city-search-range" placeholder="Type any city…" oninput="onCitySearch(this.value,'range')" autocomplete="off">
+      <div id="search-results-range"></div>
+      <div class="favs-section" id="favs-range"></div>
+      <div id="selected-city-range"></div>
+      <button class="btn btn-primary" onclick="saveRange()">Save Range</button>
+    </div>
+
+    <!-- TRANSIT -->
+    <div id="travel-mode" style="display:none">
+      <div class="info-box">✈ Overnight flight — logged as Transit, not attributed to any country.</div>
+      <label class="form-label">Travel Date (departure)</label>
+      <input type="date" class="form-input" id="travel-date">
+      <label class="form-label">Route</label>
+      <input type="text" class="form-input" id="travel-route" placeholder="e.g. London → Singapore">
+      <button class="btn btn-travel" onclick="saveTravel()">Save Transit Night</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ STATS ═══ -->
+<div id="screen-stats" class="screen">
+  <div class="summary-grid" id="summary-grid"></div>
+  <div class="card">
+    <div class="card-title">Period</div>
+    <div class="year-tabs">
+      <button class="year-tab active" id="ytab-ytd" onclick="setStatYear('ytd')">Cal YTD</button>
+      <button class="year-tab" id="ytab-feb" onclick="setStatYear('feb')">YE 28 Feb</button>
+      <button class="year-tab" id="ytab-all" onclick="setStatYear('all')">All Time</button>
+    </div>
+    <div id="stats-content"></div>
+  </div>
+</div>
+
+<!-- ═══ EXPORT ═══ -->
+<div id="screen-export" class="screen">
+  <div class="card">
+    <div class="card-title">Download Data</div>
+    <div class="export-grid">
+      <button class="export-btn xlsx-btn" onclick="exportXLSX()">
+        <span class="ico">📊</span><span>Excel .xlsx</span><span style="font-size:10px;font-weight:400;opacity:0.8">4-sheet workbook</span>
+      </button>
+      <button class="export-btn csv-btn" onclick="exportCSV()">
+        <span class="ico">📄</span><span>CSV</span><span style="font-size:10px;font-weight:400;opacity:0.8">Raw daily log</span>
+      </button>
+      <button class="export-btn pdf-btn" onclick="openReportModal()">
+        <span class="ico">📋</span><span>Annual Report</span><span style="font-size:10px;font-weight:400;opacity:0.8">Print to PDF</span>
+      </button>
+      <button class="export-btn json-btn" onclick="exportJSON()">
+        <span class="ico">💾</span><span>JSON Backup</span><span style="font-size:10px;font-weight:400;opacity:0.8">Full restore</span>
+      </button>
+    </div>
+    <div class="info-box" style="font-size:12px"><b>Excel:</b> Daily Log · Country Summary · City Summary · Monthly Breakdown</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Annual Report</div>
+    <p style="font-size:13px;color:var(--ink2);margin-bottom:14px">Formal residency report covering both calendar and fiscal year periods.</p>
+    <div class="period-selector">
+      <div class="period-btn selected" id="pb-dec" onclick="selectPeriod('dec')">
+        <div class="p-icon">🎄</div><div class="p-title">Calendar Year</div><div class="p-sub">1 Jan → 31 Dec</div>
+      </div>
+      <div class="period-btn" id="pb-feb" onclick="selectPeriod('feb')">
+        <div class="p-icon">📅</div><div class="p-title">Fiscal Year</div><div class="p-sub">1 Mar → 28/29 Feb</div>
+      </div>
+    </div>
+    <div class="year-input-row">
+      <label>Year:</label>
+      <input type="number" id="report-year" min="2000" max="2099">
+      <span class="period-hint" id="report-period-hint"></span>
+    </div>
+    <button class="btn btn-primary" onclick="openReportInNewTab()">Open Report (New Tab → Print PDF)</button>
+    <button class="btn btn-outline" style="margin-top:0" onclick="openReportModal()">Preview in App</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Import Backup</div>
+    <button class="btn" style="background:var(--grey2);color:var(--ink);margin-bottom:0" onclick="document.getElementById('import-file').click()">Import JSON Backup</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+  </div>
+</div>
+
+<!-- ═══ SETTINGS ═══ -->
+<div id="screen-settings" class="screen">
+  <div class="card">
+    <div class="card-title">Anthropic API Key</div>
+    <div class="api-setup">
+      <p>🔑 Powers AI city search for any city worldwide. Without it, only the built-in list (~150 cities) is available.</p>
+      <div class="api-key-row">
+        <input type="password" id="api-key-input" placeholder="sk-ant-...">
+        <button class="btn-sm btn-primary" onclick="saveApiKey()">Save</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Favourites</div>
+    <p style="font-size:13px;color:var(--ink2);margin-bottom:10px">Star (☆) any search result to pin it as a quick-access favourite.</p>
+    <div id="favs-manage"></div>
+    <button class="btn" style="background:var(--red-lt);color:var(--red);margin-top:8px" onclick="clearFavs()">Clear All Favourites</button>
+  </div>
+  <div class="card">
+    <div class="card-title">About</div>
+    <p style="font-size:13px;color:var(--ink2);line-height:1.7">
+      • A <b>night</b> = where you sleep (or depart from for overnight flights).<br>
+      • <b>Transit</b> = overnight flight, not attributed to any country.<br>
+      • Gap detection: days with no entry are highlighted in orange.<br>
+      • Cities/countries shown if ≥10% of total nights.<br>
+      • <b>Calendar YTD</b>: 1 Jan → today. <b>YE Feb</b>: 1 Mar → 28/29 Feb.
+    </p>
+  </div>
+  <div class="card">
+    <div class="card-title">Danger Zone</div>
+    <button class="btn" style="background:var(--red-lt);color:var(--red)" onclick="clearAll()">Clear All Data</button>
+  </div>
+</div>
+
+<!-- ═══ REPORT MODAL ═══ -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Annual Report</h2>
+      <button class="modal-close" onclick="closeReportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-builder">
+        <div class="period-selector">
+          <div class="period-btn selected" id="mpb-dec" onclick="selectModalPeriod('dec')">
+            <div class="p-icon">🎄</div><div class="p-title">Calendar Year</div><div class="p-sub">1 Jan → 31 Dec</div>
+          </div>
+          <div class="period-btn" id="mpb-feb" onclick="selectModalPeriod('feb')">
+            <div class="p-icon">📅</div><div class="p-title">Fiscal Year</div><div class="p-sub">1 Mar → 28/29 Feb</div>
+          </div>
+        </div>
+        <div class="year-input-row">
+          <label>Year:</label>
+          <input type="number" id="modal-year" min="2000" max="2099">
+          <span class="period-hint" id="modal-period-hint"></span>
+        </div>
+        <button class="btn btn-primary" onclick="showModalReport()">Generate Report</button>
+      </div>
+      <div id="modal-report" style="display:none">
+        <div id="modal-report-content" style="max-height:55vh;overflow-y:auto"></div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-primary" style="flex:1;margin-bottom:0" onclick="printModalReport()">🖨 Print / Save PDF</button>
+          <button class="btn btn-outline" style="flex:1;margin-bottom:0" onclick="backToModalBuilder()">← Back</button>
+        </div>
+        <div class="info-box" style="font-size:11px;margin-top:8px">iPhone: Print → Share → Save to Files as PDF</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let entries     = JSON.parse(localStorage.getItem('dc_entries')||'[]');
+let apiKey      = localStorage.getItem('dc_apikey')||'';
+let favourites  = JSON.parse(localStorage.getItem('dc_favs')||'[]');
+let currentMode = 'single';
+let selectedCity= {single:null, range:null};
+let statYear    = 'ytd';
+let reportPeriod= 'dec';
+let modalPeriod = 'dec';
+let searchTimeout=null;
+let gapFilterOn = false;
+let histFilter  = '';
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+function init() {
+  const today = todayStr();
+  document.getElementById('single-date').value  = today;
+  document.getElementById('travel-date').value  = today;
+  document.getElementById('range-from').value   = today;
+  document.getElementById('range-to').value     = today;
+  document.getElementById('api-key-input').value= apiKey;
+  const yr = new Date().getFullYear();
+  document.getElementById('report-year').value  = yr;
+  document.getElementById('modal-year').value   = yr;
+  updateHints();
+  document.getElementById('range-from').addEventListener('change', updateRangeInfo);
+  document.getElementById('range-to').addEventListener('change',   updateRangeInfo);
+  document.getElementById('report-year').addEventListener('input',  updateHints);
+  document.getElementById('modal-year').addEventListener('input',   updateHints);
+  renderHistory(); renderStats(); renderTodayStatus(); renderFavsManage();
+}
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+const todayStr   = () => new Date().toISOString().split('T')[0];
+const fmtDate    = d  => new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+const fmtShort   = d  => new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+const isLeap     = y  => (y%4===0&&y%100!==0)||y%400===0;
+const febEnd     = y  => isLeap(y)?`${y}-02-29`:`${y}-02-28`;
+const febEndDay  = y  => isLeap(y)?29:28;
+const addDays    = (d,n) => { const dt=new Date(d+'T12:00:00'); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; };
+const daysBetween= (a,b) => Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);
+
+function updateHints() {
+  const yr  = parseInt(document.getElementById('report-year').value)||new Date().getFullYear();
+  const myr = parseInt(document.getElementById('modal-year').value)||new Date().getFullYear();
+  document.getElementById('report-period-hint').textContent = reportPeriod==='dec'
+    ? `1 Jan ${yr} – 31 Dec ${yr}` : `1 Mar ${yr-1} – ${febEndDay(yr)} Feb ${yr}`;
+  document.getElementById('modal-period-hint').textContent = modalPeriod==='dec'
+    ? `1 Jan ${myr} – 31 Dec ${myr}` : `1 Mar ${myr-1} – ${febEndDay(myr)} Feb ${myr}`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  GAP DETECTION
+// ═══════════════════════════════════════════════════════
+function findGaps() {
+  if (!entries.length) return [];
+  const sorted = [...entries].sort((a,b)=>a.date.localeCompare(b.date));
+  const today  = todayStr();
+  const gaps   = [];
+  // Check from first entry to today
+  let prev = sorted[0].date;
+  for (let i=1; i<sorted.length; i++) {
+    const diff = daysBetween(prev, sorted[i].date);
+    if (diff > 1) {
+      const start = addDays(prev, 1);
+      const end   = addDays(sorted[i].date, -1);
+      gaps.push({ start, end, days: diff-1 });
+    }
+    prev = sorted[i].date;
+  }
+  // gap from last entry to today (only if last entry < today)
+  if (prev < today) {
+    const diff = daysBetween(prev, today);
+    if (diff > 0) gaps.push({ start: addDays(prev,1), end: today, days: diff, openEnd: true });
+  }
+  return gaps;
+}
+
+function renderGapBanner() {
+  const gaps = findGaps();
+  const banner = document.getElementById('gap-banner');
+  const btn    = document.getElementById('gap-toggle-btn');
+  if (!gaps.length) {
+    banner.style.display='none';
+    btn.textContent='✓ No Gaps';
+    btn.style.color='var(--green)'; btn.style.borderColor='#A5D6A7'; btn.style.background='var(--green-lt)';
+    return;
+  }
+  const totalMissing = gaps.reduce((s,g)=>s+g.days,0);
+  btn.textContent=`⚠ ${gaps.length} Gap${gaps.length>1?'s':''}`;
+  banner.style.display='block';
+  banner.innerHTML=`<div class="gap-banner">
+    <div><b>⚠ ${gaps.length} gap${gaps.length>1?'s':''} found</b> — ${totalMissing} day${totalMissing>1?'s':''} missing</div>
+    <button onclick="showScreen('add')" style="background:var(--orange);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">+ Fill</button>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  HISTORY RENDER
+// ═══════════════════════════════════════════════════════
+function toggleGapFilter() {
+  gapFilterOn = !gapFilterOn;
+  const btn = document.getElementById('gap-toggle-btn');
+  btn.classList.toggle('on', gapFilterOn);
+  renderHistory();
+}
+
+function renderHistory() {
+  histFilter = document.getElementById('hist-filter').value.toLowerCase();
+  renderGapBanner();
+  const tbody = document.getElementById('hist-body');
+  const gaps  = findGaps();
+
+  // Build a sorted list including gap placeholders
+  const sorted = [...entries].sort((a,b)=>b.date.localeCompare(a.date)); // newest first
+
+  // Create set of gap ranges for fast lookup
+  const gapSet = new Set();
+  gaps.forEach(g => {
+    let d = g.start;
+    while (d <= g.end) { gapSet.add(d); d = addDays(d,1); }
+  });
+
+  // Filter entries
+  let displayed = sorted.filter(e => {
+    if (histFilter) {
+      const city    = (e.city||'').toLowerCase();
+      const country = (e.country||'').toLowerCase();
+      const route   = (e.route||'').toLowerCase();
+      if (!city.includes(histFilter) && !country.includes(histFilter) && !route.includes(histFilter)) return false;
+    }
+    if (gapFilterOn) return false; // when gap filter is on, show only gap rows
+    return true;
+  });
+
+  // When gap filter is on, show only gap days
+  if (gapFilterOn) {
+    if (!gaps.length) {
+      tbody.innerHTML=`<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--green);font-weight:600">✓ No missing dates</td></tr>`;
+      document.getElementById('hist-count').textContent='';
+      return;
+    }
+    let html='';
+    gaps.forEach(g=>{
+      let d=g.start;
+      while(d<=g.end){
+        html+=`<tr class="gap-row">
+          <td class="date-col">${fmtShort(d)}</td>
+          <td colspan="2"><span class="gap-badge" onclick="prefillDate('${d}')">⚠ MISSING — tap to fill</span></td>
+          <td class="del-col"></td>
+        </tr>`;
+        d=addDays(d,1);
+      }
+    });
+    tbody.innerHTML=html;
+    const total=gaps.reduce((s,g)=>s+g.days,0);
+    document.getElementById('hist-count').textContent=`${total} missing day${total>1?'s':''}`;
+    return;
+  }
+
+  if (!displayed.length) {
+    tbody.innerHTML=`<tr><td colspan="4" class="empty-state" style="padding:28px;text-align:center;color:var(--ink2)">
+      ${histFilter?'No matching entries':'No entries yet — tap + Add to start'}</td></tr>`;
+    document.getElementById('hist-count').textContent='';
+    return;
+  }
+
+  let html='';
+  const today=todayStr();
+  // Interleave gap rows between entry rows (newest-first, so gaps appear between entries)
+  // Build merged list
+  const allDates = new Set(sorted.map(e=>e.date));
+  // find gaps that fall within visible range
+  const minDate = sorted[sorted.length-1]?.date || today;
+  const maxDate = today;
+
+  // newest-first: iterate and insert gap placeholders
+  let prev = null;
+  displayed.forEach((e,i) => {
+    // Check if there are gap days ABOVE this entry (i.e. between prev shown entry and this one, newest-first means gap is AFTER prev)
+    if (prev && !histFilter) {
+      // prev is more recent; check days between e.date and prev
+      const diff = daysBetween(e.date, prev);
+      if (diff > 1) {
+        // There are missing dates between e.date+1 and prev-1
+        const gStart = addDays(e.date, 1);
+        const gEnd   = addDays(prev, -1);
+        let gd = gEnd; // newest first
+        while (gd >= gStart) {
+          if (gapSet.has(gd)) {
+            html+=`<tr class="gap-row">
+              <td class="date-col">${fmtShort(gd)}</td>
+              <td colspan="2"><span class="gap-badge" onclick="prefillDate('${gd}')">⚠ MISSING — tap to fill</span></td>
+              <td class="del-col"></td>
+            </tr>`;
+          }
+          gd=addDays(gd,-1);
+        }
+      }
+    }
+    // If this is first row and there's a gap between last entry and today
+    if (i===0 && !histFilter) {
+      const diff = daysBetween(e.date, today);
+      if (diff > 0) {
+        let gd = today;
+        while (gd > e.date) {
+          if (gapSet.has(gd)) {
+            html+=`<tr class="gap-row">
+              <td class="date-col">${fmtShort(gd)}</td>
+              <td colspan="2"><span class="gap-badge" onclick="prefillDate('${gd}')">⚠ MISSING — tap to fill</span></td>
+              <td class="del-col"></td>
+            </tr>`;
+          }
+          gd=addDays(gd,-1);
+        }
+      }
+    }
+
+    const isTransit = e.type==='transit';
+    const rowClass  = isTransit ? 'transit-row' : '';
+    const cityTxt   = isTransit ? (e.route||'In Transit') : e.city;
+    const countryTxt= isTransit ? '✈ Transit' : e.country;
+    const flagTxt   = e.flag||'';
+    html+=`<tr class="${rowClass}">
+      <td class="date-col">${fmtShort(e.date)}</td>
+      <td class="city-col">${flagTxt} ${cityTxt}</td>
+      <td class="country-col">${countryTxt}</td>
+      <td class="del-col"><button class="del-btn" onclick="deleteEntry('${e.date}')">×</button></td>
+    </tr>`;
+    prev = e.date;
+  });
+
+  tbody.innerHTML=html;
+  document.getElementById('hist-count').textContent=`${displayed.length} entr${displayed.length===1?'y':'ies'}${histFilter?' (filtered)':''}`;
+}
+
+function prefillDate(date) {
+  showScreen('add');
+  document.getElementById('single-date').value = date;
+  setMode('single');
+}
+
+// ═══════════════════════════════════════════════════════
+//  TODAY STATUS
+// ═══════════════════════════════════════════════════════
+function renderTodayStatus() {
+  const today=todayStr(), entry=entries.find(e=>e.date===today);
+  document.getElementById('today-status').innerHTML = entry
+    ? `<div style="display:flex;align-items:center;gap:10px;padding:4px 0">
+        <span style="font-size:26px">${entry.flag}</span>
+        <div><div style="font-size:16px;font-weight:600">${entry.type==='transit'?(entry.route||'In Transit'):entry.city}</div>
+        <div style="font-size:12px;color:var(--ink2)">${entry.country} · ${fmtDate(today)}</div></div></div>`
+    : `<div style="padding:6px 0;font-size:13px;color:var(--orange)">⚠ No entry for today — <a href="#" onclick="showScreen('add');return false" style="color:var(--blue);font-weight:600">add one</a></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCREENS
+// ═══════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  ['log','add','stats','export','settings'].forEach((x,i)=>{
+    if(x===id) document.querySelectorAll('.tab')[i].classList.add('active');
+  });
+  if(id==='stats')   renderStats();
+  if(id==='log')    { renderHistory(); renderTodayStatus(); }
+  if(id==='settings') renderFavsManage();
+  if(id==='add')    { renderFavChips('single'); renderFavChips('range'); }
+}
+
+function setMode(m) {
+  currentMode=m;
+  ['single','range','travel'].forEach(x=>{
+    document.getElementById(x+'-mode').style.display=x===m?'block':'none';
+    document.getElementById('mode-'+x).classList.toggle('active',x===m);
+  });
+  if(m!=='travel') renderFavChips(m);
+}
+
+// ═══════════════════════════════════════════════════════
+//  FAVOURITES
+// ═══════════════════════════════════════════════════════
+function isFav(city) { return favourites.some(f=>f.city===city.city&&f.country===city.country); }
+function toggleFav(city) {
+  if(isFav(city)) favourites=favourites.filter(f=>!(f.city===city.city&&f.country===city.country));
+  else favourites=[...favourites,city];
+  localStorage.setItem('dc_favs',JSON.stringify(favourites));
+  renderFavChips('single'); renderFavChips('range'); renderFavsManage();
+}
+function renderFavChips(mode) {
+  const el=document.getElementById('favs-'+mode);
+  if(!el) return;
+  if(!favourites.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="favs-label">⭐ Quick Select</div>
+    <div class="favs-chips">${favourites.map(f=>
+      `<div class="fav-chip" onclick='selectCity(${JSON.stringify(f)},"${mode}")'>${f.flag} ${f.city}</div>`
+    ).join('')}</div>`;
+}
+function renderFavsManage() {
+  const el=document.getElementById('favs-manage');
+  if(!el) return;
+  if(!favourites.length){el.innerHTML=`<p style="font-size:13px;color:var(--ink2)">No favourites yet.</p>`;return;}
+  el.innerHTML=`<div class="favs-chips">${favourites.map((f,i)=>
+    `<div class="fav-chip" style="padding-right:6px">${f.flag} ${f.city}
+      <span onclick="removeFavByIndex(${i})" style="margin-left:4px;color:#999;cursor:pointer;font-size:14px">×</span>
+    </div>`).join('')}</div>`;
+}
+function removeFavByIndex(i){
+  favourites.splice(i,1);
+  localStorage.setItem('dc_favs',JSON.stringify(favourites));
+  renderFavsManage(); renderFavChips('single'); renderFavChips('range');
+}
+function clearFavs(){
+  if(confirm('Clear all favourites?')){
+    favourites=[];localStorage.setItem('dc_favs','[]');
+    renderFavsManage();renderFavChips('single');renderFavChips('range');showToast('Favourites cleared');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  CITY SEARCH — EXPANDED BUILTIN + AI
+// ═══════════════════════════════════════════════════════
+async function onCitySearch(val, mode) {
+  clearTimeout(searchTimeout);
+  if(val.length<2){document.getElementById('search-results-'+mode).innerHTML='';return;}
+  searchTimeout=setTimeout(()=>searchCity(val,mode),350);
+}
+
+async function searchCity(query, mode) {
+  const container=document.getElementById('search-results-'+mode);
+  container.innerHTML=`<div class="searching-indicator"><div class="dot-anim"><span></span><span></span><span></span></div> Searching…</div>`;
+  // Always show builtin matches immediately
+  const builtin=builtinSearch(query);
+  if(!apiKey){renderResults(builtin,mode);return;}
+  // If builtin has good matches (≥3), show them while waiting for AI
+  if(builtin.length>=3) renderResults(builtin,mode,true);
+  try {
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:
+        `City lookup: "${query}". Return ONLY a JSON array, max 8 items: [{"city":"","country":"","countryCode":"ISO2","flag":"🇬🇧"}]. No markdown, no explanation.`
+      }]})
+    });
+    const d=await r.json();
+    const text=(d.content?.[0]?.text||'[]').replace(/```json|```/g,'').trim();
+    const results=JSON.parse(text);
+    renderResults(results.length?results:builtin, mode);
+  } catch(e){ renderResults(builtin,mode); }
+}
+
+function builtinSearch(q) {
+  const lq=q.toLowerCase();
+  return CITIES.filter(c=>
+    c.city.toLowerCase().includes(lq)||
+    c.country.toLowerCase().includes(lq)||
+    (c.aliases||[]).some(a=>a.toLowerCase().includes(lq))
+  ).slice(0,8);
+}
+
+// ── Expanded city database (~180 cities) ──────────────
+const CITIES=[
+  // United States — comprehensive
+  {city:'New York',country:'United States',countryCode:'US',flag:'🇺🇸',aliases:['NYC','Manhattan']},
+  {city:'Los Angeles',country:'United States',countryCode:'US',flag:'🇺🇸',aliases:['LA']},
+  {city:'Chicago',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Houston',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Miami',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'San Francisco',country:'United States',countryCode:'US',flag:'🇺🇸',aliases:['SF']},
+  {city:'Seattle',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Boston',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Dallas',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Atlanta',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Washington DC',country:'United States',countryCode:'US',flag:'🇺🇸',aliases:['DC','Washington']},
+  {city:'Las Vegas',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Phoenix',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Denver',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Nashville',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Charleston',country:'United States',countryCode:'US',flag:'🇺🇸',aliases:['Charleston SC','Charleston WV']},
+  {city:'Charleston WV',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'New Orleans',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Portland',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Minneapolis',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'San Diego',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Tampa',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Orlando',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Charlotte',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  {city:'Austin',country:'United States',countryCode:'US',flag:'🇺🇸'},
+  // United Kingdom
+  {city:'London',country:'United Kingdom',countryCode:'GB',flag:'🇬🇧'},
+  {city:'Edinburgh',country:'United Kingdom',countryCode:'GB',flag:'🇬🇧'},
+  {city:'Manchester',country:'United Kingdom',countryCode:'GB',flag:'🇬🇧'},
+  {city:'Birmingham',country:'United Kingdom',countryCode:'GB',flag:'🇬🇧'},
+  {city:'Glasgow',country:'United Kingdom',countryCode:'GB',flag:'🇬🇧'},
+  {city:'Bristol',country:'United Kingdom',countryCode:'GB',flag:'🇬🇧'},
+  {city:'Leeds',country:'United Kingdom',countryCode:'GB',flag:'🇬🇧'},
+  {city:'Liverpool',country:'United Kingdom',countryCode:'GB',flag:'🇬🇧'},
+  // Europe
+  {city:'Paris',country:'France',countryCode:'FR',flag:'🇫🇷'},
+  {city:'Nice',country:'France',countryCode:'FR',flag:'🇫🇷'},
+  {city:'Lyon',country:'France',countryCode:'FR',flag:'🇫🇷'},
+  {city:'Berlin',country:'Germany',countryCode:'DE',flag:'🇩🇪'},
+  {city:'Munich',country:'Germany',countryCode:'DE',flag:'🇩🇪'},
+  {city:'Frankfurt',country:'Germany',countryCode:'DE',flag:'🇩🇪'},
+  {city:'Hamburg',country:'Germany',countryCode:'DE',flag:'🇩🇪'},
+  {city:'Amsterdam',country:'Netherlands',countryCode:'NL',flag:'🇳🇱'},
+  {city:'Rotterdam',country:'Netherlands',countryCode:'NL',flag:'🇳🇱'},
+  {city:'Zurich',country:'Switzerland',countryCode:'CH',flag:'🇨🇭'},
+  {city:'Geneva',country:'Switzerland',countryCode:'CH',flag:'🇨🇭'},
+  {city:'Basel',country:'Switzerland',countryCode:'CH',flag:'🇨🇭'},
+  {city:'Madrid',country:'Spain',countryCode:'ES',flag:'🇪🇸'},
+  {city:'Barcelona',country:'Spain',countryCode:'ES',flag:'🇪🇸'},
+  {city:'Seville',country:'Spain',countryCode:'ES',flag:'🇪🇸'},
+  {city:'Milan',country:'Italy',countryCode:'IT',flag:'🇮🇹'},
+  {city:'Rome',country:'Italy',countryCode:'IT',flag:'🇮🇹'},
+  {city:'Florence',country:'Italy',countryCode:'IT',flag:'🇮🇹'},
+  {city:'Venice',country:'Italy',countryCode:'IT',flag:'🇮🇹'},
+  {city:'Lisbon',country:'Portugal',countryCode:'PT',flag:'🇵🇹'},
+  {city:'Porto',country:'Portugal',countryCode:'PT',flag:'🇵🇹'},
+  {city:'Dublin',country:'Ireland',countryCode:'IE',flag:'🇮🇪'},
+  {city:'Stockholm',country:'Sweden',countryCode:'SE',flag:'🇸🇪'},
+  {city:'Copenhagen',country:'Denmark',countryCode:'DK',flag:'🇩🇰'},
+  {city:'Oslo',country:'Norway',countryCode:'NO',flag:'🇳🇴'},
+  {city:'Helsinki',country:'Finland',countryCode:'FI',flag:'🇫🇮'},
+  {city:'Vienna',country:'Austria',countryCode:'AT',flag:'🇦🇹'},
+  {city:'Brussels',country:'Belgium',countryCode:'BE',flag:'🇧🇪'},
+  {city:'Antwerp',country:'Belgium',countryCode:'BE',flag:'🇧🇪'},
+  {city:'Warsaw',country:'Poland',countryCode:'PL',flag:'🇵🇱'},
+  {city:'Krakow',country:'Poland',countryCode:'PL',flag:'🇵🇱'},
+  {city:'Prague',country:'Czech Republic',countryCode:'CZ',flag:'🇨🇿'},
+  {city:'Budapest',country:'Hungary',countryCode:'HU',flag:'🇭🇺'},
+  {city:'Athens',country:'Greece',countryCode:'GR',flag:'🇬🇷'},
+  {city:'Istanbul',country:'Turkey',countryCode:'TR',flag:'🇹🇷'},
+  {city:'Zurich',country:'Switzerland',countryCode:'CH',flag:'🇨🇭'},
+  {city:'Luxembourg',country:'Luxembourg',countryCode:'LU',flag:'🇱🇺'},
+  {city:'Monaco',country:'Monaco',countryCode:'MC',flag:'🇲🇨'},
+  {city:'Valletta',country:'Malta',countryCode:'MT',flag:'🇲🇹'},
+  {city:'Nicosia',country:'Cyprus',countryCode:'CY',flag:'🇨🇾'},
+  // Middle East / Gulf
+  {city:'Dubai',country:'United Arab Emirates',countryCode:'AE',flag:'🇦🇪'},
+  {city:'Abu Dhabi',country:'United Arab Emirates',countryCode:'AE',flag:'🇦🇪'},
+  {city:'Sharjah',country:'United Arab Emirates',countryCode:'AE',flag:'🇦🇪'},
+  {city:'Doha',country:'Qatar',countryCode:'QA',flag:'🇶🇦'},
+  {city:'Riyadh',country:'Saudi Arabia',countryCode:'SA',flag:'🇸🇦'},
+  {city:'Jeddah',country:'Saudi Arabia',countryCode:'SA',flag:'🇸🇦'},
+  {city:'Manama',country:'Bahrain',countryCode:'BH',flag:'🇧🇭'},
+  {city:'Kuwait City',country:'Kuwait',countryCode:'KW',flag:'🇰🇼'},
+  {city:'Muscat',country:'Oman',countryCode:'OM',flag:'🇴🇲'},
+  {city:'Tel Aviv',country:'Israel',countryCode:'IL',flag:'🇮🇱'},
+  {city:'Beirut',country:'Lebanon',countryCode:'LB',flag:'🇱🇧'},
+  // Asia Pacific
+  {city:'Singapore',country:'Singapore',countryCode:'SG',flag:'🇸🇬'},
+  {city:'Hong Kong',country:'Hong Kong',countryCode:'HK',flag:'🇭🇰'},
+  {city:'Tokyo',country:'Japan',countryCode:'JP',flag:'🇯🇵'},
+  {city:'Osaka',country:'Japan',countryCode:'JP',flag:'🇯🇵'},
+  {city:'Seoul',country:'South Korea',countryCode:'KR',flag:'🇰🇷'},
+  {city:'Busan',country:'South Korea',countryCode:'KR',flag:'🇰🇷'},
+  {city:'Shanghai',country:'China',countryCode:'CN',flag:'🇨🇳'},
+  {city:'Beijing',country:'China',countryCode:'CN',flag:'🇨🇳'},
+  {city:'Shenzhen',country:'China',countryCode:'CN',flag:'🇨🇳'},
+  {city:'Guangzhou',country:'China',countryCode:'CN',flag:'🇨🇳'},
+  {city:'Taipei',country:'Taiwan',countryCode:'TW',flag:'🇹🇼'},
+  {city:'Bangkok',country:'Thailand',countryCode:'TH',flag:'🇹🇭'},
+  {city:'Phuket',country:'Thailand',countryCode:'TH',flag:'🇹🇭'},
+  {city:'Kuala Lumpur',country:'Malaysia',countryCode:'MY',flag:'🇲🇾',aliases:['KL']},
+  {city:'Jakarta',country:'Indonesia',countryCode:'ID',flag:'🇮🇩'},
+  {city:'Bali',country:'Indonesia',countryCode:'ID',flag:'🇮🇩'},
+  {city:'Manila',country:'Philippines',countryCode:'PH',flag:'🇵🇭'},
+  {city:'Ho Chi Minh City',country:'Vietnam',countryCode:'VN',flag:'🇻🇳',aliases:['Saigon','HCMC']},
+  {city:'Hanoi',country:'Vietnam',countryCode:'VN',flag:'🇻🇳'},
+  {city:'Phnom Penh',country:'Cambodia',countryCode:'KH',flag:'🇰🇭'},
+  {city:'Mumbai',country:'India',countryCode:'IN',flag:'🇮🇳',aliases:['Bombay']},
+  {city:'Delhi',country:'India',countryCode:'IN',flag:'🇮🇳',aliases:['New Delhi']},
+  {city:'Bangalore',country:'India',countryCode:'IN',flag:'🇮🇳',aliases:['Bengaluru']},
+  {city:'Chennai',country:'India',countryCode:'IN',flag:'🇮🇳',aliases:['Madras']},
+  {city:'Kolkata',country:'India',countryCode:'IN',flag:'🇮🇳',aliases:['Calcutta']},
+  {city:'Hyderabad',country:'India',countryCode:'IN',flag:'🇮🇳'},
+  {city:'Colombo',country:'Sri Lanka',countryCode:'LK',flag:'🇱🇰'},
+  {city:'Karachi',country:'Pakistan',countryCode:'PK',flag:'🇵🇰'},
+  {city:'Dhaka',country:'Bangladesh',countryCode:'BD',flag:'🇧🇩'},
+  {city:'Kathmandu',country:'Nepal',countryCode:'NP',flag:'🇳🇵'},
+  // Oceania
+  {city:'Sydney',country:'Australia',countryCode:'AU',flag:'🇦🇺'},
+  {city:'Melbourne',country:'Australia',countryCode:'AU',flag:'🇦🇺'},
+  {city:'Brisbane',country:'Australia',countryCode:'AU',flag:'🇦🇺'},
+  {city:'Perth',country:'Australia',countryCode:'AU',flag:'🇦🇺'},
+  {city:'Auckland',country:'New Zealand',countryCode:'NZ',flag:'🇳🇿'},
+  {city:'Wellington',country:'New Zealand',countryCode:'NZ',flag:'🇳🇿'},
+  // Africa
+  {city:'Johannesburg',country:'South Africa',countryCode:'ZA',flag:'🇿🇦',aliases:['Joburg','JHB']},
+  {city:'Cape Town',country:'South Africa',countryCode:'ZA',flag:'🇿🇦'},
+  {city:'Durban',country:'South Africa',countryCode:'ZA',flag:'🇿🇦'},
+  {city:'Nairobi',country:'Kenya',countryCode:'KE',flag:'🇰🇪'},
+  {city:'Lagos',country:'Nigeria',countryCode:'NG',flag:'🇳🇬'},
+  {city:'Abuja',country:'Nigeria',countryCode:'NG',flag:'🇳🇬'},
+  {city:'Accra',country:'Ghana',countryCode:'GH',flag:'🇬🇭'},
+  {city:'Cairo',country:'Egypt',countryCode:'EG',flag:'🇪🇬'},
+  {city:'Casablanca',country:'Morocco',countryCode:'MA',flag:'🇲🇦'},
+  {city:'Marrakech',country:'Morocco',countryCode:'MA',flag:'🇲🇦'},
+  {city:'Tunis',country:'Tunisia',countryCode:'TN',flag:'🇹🇳'},
+  {city:'Addis Ababa',country:'Ethiopia',countryCode:'ET',flag:'🇪🇹'},
+  {city:'Dar es Salaam',country:'Tanzania',countryCode:'TZ',flag:'🇹🇿'},
+  {city:'Kigali',country:'Rwanda',countryCode:'RW',flag:'🇷🇼'},
+  {city:'Luanda',country:'Angola',countryCode:'AO',flag:'🇦🇴'},
+  // Americas
+  {city:'Toronto',country:'Canada',countryCode:'CA',flag:'🇨🇦'},
+  {city:'Vancouver',country:'Canada',countryCode:'CA',flag:'🇨🇦'},
+  {city:'Montreal',country:'Canada',countryCode:'CA',flag:'🇨🇦'},
+  {city:'Calgary',country:'Canada',countryCode:'CA',flag:'🇨🇦'},
+  {city:'Ottawa',country:'Canada',countryCode:'CA',flag:'🇨🇦'},
+  {city:'São Paulo',country:'Brazil',countryCode:'BR',flag:'🇧🇷'},
+  {city:'Rio de Janeiro',country:'Brazil',countryCode:'BR',flag:'🇧🇷',aliases:['Rio']},
+  {city:'Brasília',country:'Brazil',countryCode:'BR',flag:'🇧🇷'},
+  {city:'Buenos Aires',country:'Argentina',countryCode:'AR',flag:'🇦🇷'},
+  {city:'Santiago',country:'Chile',countryCode:'CL',flag:'🇨🇱'},
+  {city:'Lima',country:'Peru',countryCode:'PE',flag:'🇵🇪'},
+  {city:'Bogotá',country:'Colombia',countryCode:'CO',flag:'🇨🇴',aliases:['Bogota']},
+  {city:'Medellín',country:'Colombia',countryCode:'CO',flag:'🇨🇴',aliases:['Medellin']},
+  {city:'Mexico City',country:'Mexico',countryCode:'MX',flag:'🇲🇽',aliases:['CDMX']},
+  {city:'Guadalajara',country:'Mexico',countryCode:'MX',flag:'🇲🇽'},
+  {city:'Cancún',country:'Mexico',countryCode:'MX',flag:'🇲🇽',aliases:['Cancun']},
+  {city:'Panama City',country:'Panama',countryCode:'PA',flag:'🇵🇦'},
+  {city:'San José',country:'Costa Rica',countryCode:'CR',flag:'🇨🇷',aliases:['San Jose']},
+  // Island / special
+  {city:'Mauritius',country:'Mauritius',countryCode:'MU',flag:'🇲🇺'},
+  {city:'Maldives',country:'Maldives',countryCode:'MV',flag:'🇲🇻'},
+  {city:'Nassau',country:'Bahamas',countryCode:'BS',flag:'🇧🇸'},
+  {city:'Hamilton',country:'Bermuda',countryCode:'BM',flag:'🇧🇲'},
+  {city:'George Town',country:'Cayman Islands',countryCode:'KY',flag:'🇰🇾',aliases:['Grand Cayman']},
+  {city:'Road Town',country:'British Virgin Islands',countryCode:'VG',flag:'🇻🇬',aliases:['BVI']},
+  {city:'St. Julian\'s',country:'Malta',countryCode:'MT',flag:'🇲🇹'},
+  {city:'Limassol',country:'Cyprus',countryCode:'CY',flag:'🇨🇾'},
+];
+
+function renderResults(results, mode, interim) {
+  const c=document.getElementById('search-results-'+mode);
+  if(!results.length){c.innerHTML='<div class="searching-indicator" style="color:var(--red)">No cities found — try a different spelling or check API key in ⚙ Settings</div>';return;}
+  c.innerHTML=`<div class="search-results">${results.map(r=>{
+    const fav=isFav(r);
+    return `<div class="search-result-item">
+      <span style="font-size:20px">${r.flag}</span>
+      <div class="ri" onclick='selectCity(${JSON.stringify(r)},"${mode}")'>
+        <div class="city-name">${r.city}</div>
+        <div class="country-name">${r.country}</div>
+      </div>
+      <button class="fav-star ${fav?'active':''}" onclick='toggleFav(${JSON.stringify(r)})' title="${fav?'Remove favourite':'Add to favourites'}">${fav?'⭐':'☆'}</button>
+    </div>`;
+  }).join('')}</div>${interim?'<div style="padding:6px 14px;font-size:11px;color:var(--ink2)">Refining with AI…</div>':''}`;
+}
+
+function selectCity(city, mode) {
+  selectedCity[mode]=city;
+  document.getElementById('search-results-'+mode).innerHTML='';
+  document.getElementById(mode==='single'?'city-search':'city-search-range').value=city.city+', '+city.country;
+  document.getElementById('selected-city-'+mode).innerHTML=
+    `<div class="chip" style="margin-bottom:10px">${city.flag} ${city.city}, ${city.country}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  RANGE INFO
+// ═══════════════════════════════════════════════════════
+function updateRangeInfo() {
+  const from=document.getElementById('range-from').value, to=document.getElementById('range-to').value;
+  const box=document.getElementById('range-info');
+  if(from&&to){
+    const n=Math.max(0,Math.round((new Date(to+'T12:00:00')-new Date(from+'T12:00:00'))/86400000)+1);
+    box.style.display='block'; box.textContent=`${n} night${n!==1?'s':''} — ${fmtShort(from)} to ${fmtShort(to)}`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  SAVE / DELETE
+// ═══════════════════════════════════════════════════════
+function saveSingle() {
+  const date=document.getElementById('single-date').value;
+  if(!date){showToast('⚠ Select a date');return;}
+  if(!selectedCity.single){showToast('⚠ Select a city first');return;}
+  entries=entries.filter(e=>e.date!==date);
+  entries.push({date,type:'night',...selectedCity.single});
+  persist(); showToast(`✓ ${fmtShort(date)} — ${selectedCity.single.city}`);
+  selectedCity.single=null;
+  document.getElementById('city-search').value='';
+  document.getElementById('selected-city-single').innerHTML='';
+  const d=new Date(date+'T12:00:00'); d.setDate(d.getDate()+1);
+  document.getElementById('single-date').value=d.toISOString().split('T')[0];
+}
+
+function saveRange() {
+  const from=document.getElementById('range-from').value, to=document.getElementById('range-to').value;
+  if(!from||!to){showToast('⚠ Select dates');return;}
+  if(!selectedCity.range){showToast('⚠ Select a city first');return;}
+  let cur=new Date(from+'T12:00:00'), end=new Date(to+'T12:00:00'), count=0;
+  while(cur<=end){
+    const ds=cur.toISOString().split('T')[0];
+    entries=entries.filter(e=>e.date!==ds);
+    entries.push({date:ds,type:'night',...selectedCity.range});
+    cur.setDate(cur.getDate()+1); count++;
+  }
+  persist(); showToast(`✓ ${count} nights in ${selectedCity.range.city}`);
+  selectedCity.range=null;
+  document.getElementById('city-search-range').value='';
+  document.getElementById('selected-city-range').innerHTML='';
+  document.getElementById('range-info').style.display='none';
+}
+
+function saveTravel() {
+  const date=document.getElementById('travel-date').value, route=document.getElementById('travel-route').value.trim()||'In transit';
+  if(!date){showToast('⚠ Select a date');return;}
+  entries=entries.filter(e=>e.date!==date);
+  entries.push({date,type:'transit',city:'Transit',country:'Transit',countryCode:'TR',flag:'✈',route});
+  persist(); showToast(`✓ Transit — ${fmtShort(date)}`);
+}
+
+function deleteEntry(date) {
+  if(!confirm('Delete entry for '+fmtDate(date)+'?')) return;
+  entries=entries.filter(e=>e.date!==date); persist();
+}
+
+function persist() {
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  localStorage.setItem('dc_entries',JSON.stringify(entries));
+  renderHistory(); renderTodayStatus(); renderStats();
+}
+
+// ═══════════════════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════════════════
+function setStatYear(y) {
+  statYear=y;
+  ['ytd','feb','all'].forEach(x=>document.getElementById('ytab-'+x).classList.toggle('active',x===y));
+  renderStats();
+}
+function calcStats(from,to) {
+  const filtered=entries.filter(e=>e.date>=from&&e.date<=to);
+  const total=filtered.length, transit=filtered.filter(e=>e.type==='transit').length;
+  const byCo={}, byCity={};
+  filtered.filter(e=>e.type!=='transit').forEach(e=>{
+    if(!byCo[e.country])byCo[e.country]={nights:0,flag:e.flag};
+    byCo[e.country].nights++;
+    const k=`${e.city}|${e.country}`;
+    if(!byCity[k])byCity[k]={nights:0,flag:e.flag,city:e.city,country:e.country};
+    byCity[k].nights++;
+  });
+  return {filtered,total,transit,byCo,byCity};
+}
+function getRange(mode) {
+  const today=new Date(todayStr()+'T12:00:00'), y=today.getFullYear();
+  const m=mode||statYear;
+  if(m==='ytd') return {from:`${y}-01-01`,to:todayStr()};
+  if(m==='feb') return {from:`${y-1}-03-01`,to:febEnd(y)};
+  if(m==='dec') return {from:`${y}-01-01`,to:`${y}-12-31`};
+  return {from:'2000-01-01',to:'2099-12-31'};
+}
+function renderStats() {
+  const {from,to}=getRange();
+  const {total,transit,byCo,byCity}=calcStats(from,to);
+  const cntN=total-transit, nCo=Object.keys(byCo).length;
+  document.getElementById('summary-grid').innerHTML=`
+    <div class="summary-tile"><div class="big">${total}</div><div class="lbl">Total Nights</div></div>
+    <div class="summary-tile"><div class="big" style="color:var(--green)">${cntN}</div><div class="lbl">Country Nights</div></div>
+    <div class="summary-tile"><div class="big" style="color:var(--yellow)">${transit}</div><div class="lbl">Transit</div></div>
+    <div class="summary-tile"><div class="big" style="color:var(--red)">${nCo}</div><div class="lbl">Countries</div></div>`;
+  const thr=total>0?Math.ceil(total*0.1):1;
+  let html=statYear!=='all'?`<div class="info-box" style="font-size:12px">${fmtDate(from)} → ${fmtDate(to)}</div>`:'';
+  const coS=Object.entries(byCo).sort((a,b)=>b[1].nights-a[1].nights);
+  html+=`<div class="section-header">Countries</div>`;
+  if(!coS.length){html+=`<div style="font-size:13px;color:var(--ink2);padding:8px 0">No data for this period</div>`;}
+  else{
+    const mx=coS[0][1].nights;
+    coS.forEach(([co,d])=>{
+      const pct=total>0?Math.round(d.nights/total*100):0;
+      html+=`<div class="stat-row" style="${d.nights<thr?'opacity:0.5':''}">
+        <div class="stat-label">${d.flag} <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${co}</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(d.nights/mx*100)}%;background:var(--blue)"></div></div>
+          <span class="stat-val" style="color:var(--blue)">${d.nights}n</span><span class="pct-badge">${pct}%</span>
+        </div></div>`;
+    });
+    if(transit>0) html+=`<div class="stat-row"><div class="stat-label">✈ <span>Transit</span></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(transit/mx*100)}%;background:var(--yellow)"></div></div>
+        <span class="stat-val" style="color:var(--yellow)">${transit}n</span><span class="pct-badge">${Math.round(transit/total*100)}%</span>
+      </div></div>`;
+  }
+  const cityS=Object.values(byCity).sort((a,b)=>b.nights-a.nights).filter(c=>c.nights>=thr);
+  if(cityS.length){
+    html+=`<div class="section-header" style="margin-top:16px">Cities ≥${thr}n (10% threshold)</div>`;
+    const mx=cityS[0].nights;
+    cityS.forEach(c=>{
+      const pct=total>0?Math.round(c.nights/total*100):0;
+      html+=`<div class="stat-row">
+        <div class="stat-label">${c.flag} <span>${c.city}</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(c.nights/mx*100)}%;background:var(--green)"></div></div>
+          <span class="stat-val" style="color:var(--green)">${c.nights}n</span><span class="pct-badge">${pct}%</span>
+        </div></div>`;
+    });
+  }
+  document.getElementById('stats-content').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  REPORT
+// ═══════════════════════════════════════════════════════
+function selectPeriod(p){reportPeriod=p;['dec','feb'].forEach(x=>document.getElementById('pb-'+x).classList.toggle('selected',x===p));updateHints();}
+function selectModalPeriod(p){modalPeriod=p;['dec','feb'].forEach(x=>document.getElementById('mpb-'+x).classList.toggle('selected',x===p));updateHints();}
+function openReportModal(){document.getElementById('report-modal').classList.add('open');}
+function closeReportModal(){document.getElementById('report-modal').classList.remove('open');}
+function backToModalBuilder(){document.getElementById('modal-report').style.display='none';document.getElementById('modal-builder').style.display='block';}
+function showModalReport(){
+  const yr=parseInt(document.getElementById('modal-year').value);
+  if(!yr){showToast('⚠ Enter a year');return;}
+  document.getElementById('modal-report-content').innerHTML=buildReport(yr,modalPeriod);
+  document.getElementById('modal-builder').style.display='none';
+  document.getElementById('modal-report').style.display='block';
+}
+function printModalReport(){
+  const yr=parseInt(document.getElementById('modal-year').value)||new Date().getFullYear();
+  const html=document.getElementById('modal-report-content').innerHTML;
+  const w=window.open('','_blank');
+  if(w){w.document.write(wrapReport(html,yr,modalPeriod));w.document.close();setTimeout(()=>w.print(),700);}
+  else showToast('⚠ Allow pop-ups to print');
+}
+function openReportInNewTab(){
+  const yr=parseInt(document.getElementById('report-year').value);
+  if(!yr){showToast('⚠ Enter a year');return;}
+  const w=window.open('','_blank');
+  if(w){w.document.write(wrapReport(buildReport(yr,reportPeriod),yr,reportPeriod));w.document.close();}
+  else showToast('⚠ Allow pop-ups then tap again');
+}
+
+function buildReport(yr,mode){
+  const decR={from:`${yr}-01-01`,to:`${yr}-12-31`,label:`1 Jan ${yr} – 31 Dec ${yr}`,title:`Calendar Year ${yr}`};
+  const febR={from:`${yr-1}-03-01`,to:febEnd(yr),label:`1 Mar ${yr-1} – ${febEndDay(yr)} Feb ${yr}`,title:`Fiscal Year ending ${febEndDay(yr)} Feb ${yr}`};
+  const prim=mode==='dec'?decR:febR, sec=mode==='dec'?febR:decR;
+  const sP=calcStats(prim.from,prim.to), sS=calcStats(sec.from,sec.to);
+  const thr=sP.total>0?Math.ceil(sP.total*0.1):1;
+  const genDate=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  const months=[];
+  for(let m=0;m<12;m++){
+    const ms=new Date(yr,m,1).toISOString().split('T')[0], me=new Date(yr,m+1,0).toISOString().split('T')[0];
+    const mE=entries.filter(e=>e.date>=ms&&e.date<=me&&e.type!=='transit');
+    const mco={};mE.forEach(e=>{mco[e.country]=(mco[e.country]||0)+1;});
+    const top=Object.entries(mco).sort((a,b)=>b[1]-a[1])[0];
+    months.push({name:new Date(ms).toLocaleDateString('en-GB',{month:'short'}),nights:mE.length,top:top?top[0].substring(0,8):'–'});
+  }
+  const allCo=[...new Set([...Object.keys(sP.byCo),...Object.keys(sS.byCo)])].sort();
+  const coRows=allCo.map(co=>{
+    const n1=sP.byCo[co]?.nights||0,n2=sS.byCo[co]?.nights||0,flag=(sP.byCo[co]||sS.byCo[co])?.flag||'';
+    if(!n1&&!n2)return'';
+    return`<tr><td style="padding:7px 10px">${flag} ${co}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#1565C0;font-weight:600">${n1||'–'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#78909C">${n1&&sP.total?(n1/sP.total*100).toFixed(1)+'%':'–'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#2E7D32;font-weight:600">${n2||'–'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#78909C">${n2&&sS.total?(n2/sS.total*100).toFixed(1)+'%':'–'}</td></tr>`;
+  }).join('');
+  const cityRows=Object.values(sP.byCity).sort((a,b)=>b.nights-a.nights).filter(c=>c.nights>=thr).map(c=>`<tr>
+    <td style="padding:7px 10px">${c.flag} ${c.city}</td><td style="padding:7px 10px;color:#455A64">${c.country}</td>
+    <td style="padding:7px 10px;text-align:right;font-family:monospace;font-weight:600;color:#2E7D32">${c.nights}</td>
+    <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#78909C">${sP.total?(c.nights/sP.total*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
+  const mCells=months.map(m=>`<div style="background:#F5F7FA;border-radius:8px;padding:9px 6px;text-align:center">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#455A64">${m.name}</div>
+    <div style="font-family:monospace;font-size:20px;font-weight:700;color:${m.nights>0?'#1565C0':'#B0BEC5'};margin-top:2px">${m.nights}</div>
+    <div style="font-size:9px;color:#455A64;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.top}</div></div>`).join('');
+  const tRow=(sP.transit>0||sS.transit>0)?`<tr style="background:#FFFDE7">
+    <td style="padding:7px 10px">✈ Transit</td>
+    <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#F9A825;font-weight:600">${sP.transit||'–'}</td>
+    <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#78909C">${sP.transit&&sP.total?(sP.transit/sP.total*100).toFixed(1)+'%':'–'}</td>
+    <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#F9A825;font-weight:600">${sS.transit||'–'}</td>
+    <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#78909C">${sS.transit&&sS.total?(sS.transit/sS.total*100).toFixed(1)+'%':'–'}</td></tr>`:'';
+  return`
+<div style="background:#1565C0;color:#fff;padding:28px 24px;border-radius:12px;margin-bottom:20px">
+  <div style="font-size:22px;font-weight:700">🌍 Tax Residency Report</div>
+  <div style="font-size:15px;opacity:0.9;margin-top:4px">${prim.title}</div>
+  <div style="font-family:monospace;font-size:11px;opacity:0.65;margin-top:6px">PRIMARY: ${prim.label} · Generated ${genDate}</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+  ${[[sP.total,'Total Nights','#1565C0'],[sP.total-sP.transit,'Country Nights','#2E7D32'],[sP.transit,'Transit','#F9A825'],[Object.keys(sP.byCo).length,'Countries','#C62828']].map(([v,l,c])=>
+    `<div style="background:#F5F7FA;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:28px;font-weight:700;color:${c};font-family:Georgia,serif">${v}</div>
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;color:#455A64;margin-top:2px">${l}</div>
+    </div>`).join('')}
+</div>
+<div style="margin-bottom:20px">
+  <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#455A64;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #E3F0FF">Country Nights — Both Periods</div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr>
+      <th style="background:#1A1A2E;color:#fff;padding:8px 10px;text-align:left;font-size:11px">Country</th>
+      <th style="background:#1565C0;color:#fff;padding:8px 10px;text-align:right;font-size:10px" colspan="2">${prim.label}</th>
+      <th style="background:#2E7D32;color:#fff;padding:8px 10px;text-align:right;font-size:10px" colspan="2">${sec.label}</th>
+    </tr>
+    <tr>
+      <th style="background:#37474F;color:#fff;padding:5px 10px;font-size:10px;text-align:left"></th>
+      <th style="background:#1976D2;color:#fff;padding:5px 10px;text-align:right;font-size:10px">Nights</th>
+      <th style="background:#1976D2;color:#fff;padding:5px 10px;text-align:right;font-size:10px">%</th>
+      <th style="background:#388E3C;color:#fff;padding:5px 10px;text-align:right;font-size:10px">Nights</th>
+      <th style="background:#388E3C;color:#fff;padding:5px 10px;text-align:right;font-size:10px">%</th>
+    </tr></thead>
+    <tbody>
+      ${coRows}${tRow}
+      <tr style="background:#E3F0FF">
+        <td style="padding:7px 10px;font-weight:700;color:#1565C0">TOTAL</td>
+        <td style="padding:7px 10px;text-align:right;font-family:monospace;font-weight:700;color:#1565C0">${sP.total}</td>
+        <td style="padding:7px 10px;text-align:right;font-family:monospace;font-weight:700;color:#1565C0">100%</td>
+        <td style="padding:7px 10px;text-align:right;font-family:monospace;font-weight:700;color:#2E7D32">${sS.total}</td>
+        <td style="padding:7px 10px;text-align:right;font-family:monospace;font-weight:700;color:#2E7D32">100%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+${cityRows?`<div style="margin-bottom:20px">
+  <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#455A64;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #E8F5E9">Top Cities — ${prim.label} (≥${thr} nights)</div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr>
+      <th style="background:#2E7D32;color:#fff;padding:8px 10px;text-align:left;font-size:11px">City</th>
+      <th style="background:#2E7D32;color:#fff;padding:8px 10px;text-align:left;font-size:11px">Country</th>
+      <th style="background:#2E7D32;color:#fff;padding:8px 10px;text-align:right;font-size:11px">Nights</th>
+      <th style="background:#2E7D32;color:#fff;padding:8px 10px;text-align:right;font-size:11px">%</th>
+    </tr></thead>
+    <tbody>${cityRows}</tbody>
+  </table>
+</div>`:''}
+<div style="margin-bottom:20px">
+  <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#455A64;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #E3F0FF">Monthly — Calendar ${yr}</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${mCells}</div>
+</div>
+<div style="font-size:11px;color:#455A64;border-top:1px solid #E8ECF0;padding-top:12px;line-height:1.6">
+  <b>Methodology:</b> Night = location of sleep or overnight flight departure. Transit = in-flight, not attributed to any country. City threshold = ≥10% of primary-period nights.
+  <br><b>Disclaimer:</b> For informational purposes only. Consult a qualified tax adviser.
+</div>`;
+}
+
+function wrapReport(body,yr,mode){
+  const title=mode==='dec'?`Residency Report ${yr}`:`Residency Report FY ${yr}`;
+  return`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body{font-family:'DM Sans',Arial,sans-serif;background:#F5F7FA;margin:0;padding:24px;color:#1A1A2E}
+  .wrap{max-width:720px;margin:0 auto;background:#fff;padding:28px;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+  table tr:nth-child(even) td{background:#FAFBFC}
+  .pb{display:block;margin:20px auto 0;padding:12px 32px;background:#1565C0;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+  @media print{body{background:#fff;padding:0}.pb{display:none!important}.wrap{box-shadow:none;border-radius:0;padding:0}@page{margin:15mm}}
+  </style></head><body><div class="wrap">${body}<button class="pb" onclick="window.print()">🖨 Print / Save as PDF</button></div></body></html>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  EXCEL / CSV / JSON EXPORT
+// ═══════════════════════════════════════════════════════
+function exportXLSX(){
+  if(!entries.length){showToast('⚠ No data to export');return;}
+  const wb=XLSX.utils.book_new();
+  const today=new Date(todayStr()+'T12:00:00'), yr=today.getFullYear();
+  const ranges={ytd:{from:`${yr}-01-01`,to:todayStr()},feb:{from:`${yr-1}-03-01`,to:febEnd(yr)},dec:{from:`${yr}-01-01`,to:`${yr}-12-31`},all:{from:'2000-01-01',to:'2099-12-31'}};
+  const stats={};Object.keys(ranges).forEach(k=>{stats[k]=calcStats(ranges[k].from,ranges[k].to);});
+  const logRows=[['Date','Weekday','City','Country','Country Code','Type','Notes']];
+  [...entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+    logRows.push([e.date,new Date(e.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'}),
+      e.type==='transit'?(e.route||'Transit'):e.city,e.type==='transit'?'Transit':e.country,
+      e.type==='transit'?'TR':e.countryCode,e.type==='transit'?'Transit':'Night',e.route||'']);
+  });
+  const ws1=XLSX.utils.aoa_to_sheet(logRows);ws1['!cols']=[{wch:12},{wch:6},{wch:22},{wch:24},{wch:6},{wch:10},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Daily Log');
+  const allCo=[...new Set(Object.keys(stats.all.byCo))].sort();
+  const coRows=[['Country','Flag','Cal YTD Nights','Cal YTD %','YE Feb Nights','YE Feb %','Cal Year Nights','Cal Year %','All Time Nights','All Time %']];
+  allCo.forEach(co=>{const row=[co,stats.all.byCo[co]?.flag||''];['ytd','feb','dec','all'].forEach(k=>{const n=stats[k].byCo[co]?.nights||0,t=stats[k].total;row.push(n,t>0?parseFloat((n/t*100).toFixed(1)):0);});coRows.push(row);});
+  coRows.push(['TOTAL','',...['ytd','feb','dec','all'].flatMap(k=>[stats[k].total-stats[k].transit,100])]);
+  const ws2=XLSX.utils.aoa_to_sheet(coRows);ws2['!cols']=[{wch:24},{wch:5},...Array(8).fill({wch:12})];
+  XLSX.utils.book_append_sheet(wb,ws2,'Country Summary');
+  const allCities=Object.values(stats.all.byCity).sort((a,b)=>b.nights-a.nights);
+  const cityRows=[['City','Country','Flag','Cal YTD','YE Feb','Cal Year','All Time','All Time %']];
+  allCities.forEach(c=>{const k=`${c.city}|${c.country}`;cityRows.push([c.city,c.country,c.flag,...['ytd','feb','dec'].map(p=>stats[p].byCity[k]?.nights||0),c.nights,stats.all.total>0?parseFloat((c.nights/stats.all.total*100).toFixed(1)):0]);});
+  const ws3=XLSX.utils.aoa_to_sheet(cityRows);ws3['!cols']=[{wch:20},{wch:22},{wch:5},...Array(5).fill({wch:12})];
+  XLSX.utils.book_append_sheet(wb,ws3,'City Summary');
+  const yrs=[...new Set(entries.map(e=>e.date.substring(0,4)))].sort();
+  const mRows=[['Year','Month #','Month','Country Nights','Transit Nights','Total Nights','Top Country','Top N']];
+  yrs.forEach(y=>{for(let m=0;m<12;m++){const ms=new Date(+y,m,1).toISOString().split('T')[0],me=new Date(+y,m+1,0).toISOString().split('T')[0];const mE=entries.filter(e=>e.date>=ms&&e.date<=me);const tr=mE.filter(e=>e.type==='transit').length,co=mE.filter(e=>e.type!=='transit').length;const mco={};mE.filter(e=>e.type!=='transit').forEach(e=>{mco[e.country]=(mco[e.country]||0)+1;});const top=Object.entries(mco).sort((a,b)=>b[1]-a[1])[0];mRows.push([+y,m+1,new Date(ms).toLocaleDateString('en-GB',{month:'long'}),co,tr,mE.length,top?top[0]:'',top?top[1]:0]);}});
+  const ws4=XLSX.utils.aoa_to_sheet(mRows);ws4['!cols']=[{wch:6},{wch:7},{wch:12},{wch:14},{wch:14},{wch:12},{wch:22},{wch:8}];
+  XLSX.utils.book_append_sheet(wb,ws4,'Monthly Breakdown');
+  XLSX.writeFile(wb,`days-counter-${todayStr()}.xlsx`);showToast('✓ Excel downloaded');
+}
+function exportCSV(){
+  if(!entries.length){showToast('⚠ No data');return;}
+  const rows=[['Date','City','Country','CountryCode','Type','Notes']];
+  [...entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{rows.push([e.date,e.type==='transit'?(e.route||'Transit'):e.city,e.type==='transit'?'Transit':e.country,e.type==='transit'?'TR':e.countryCode,e.type==='transit'?'Transit':'Night',e.route||'']);});
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`days-counter-${todayStr()}.csv`;a.click();showToast('✓ CSV downloaded');
+}
+function exportJSON(){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({entries,exportDate:new Date().toISOString()},null,2)],{type:'application/json'}));a.download=`days-counter-backup-${todayStr()}.json`;a.click();showToast('✓ JSON backup downloaded');
+}
+
+// ═══════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════
+function saveApiKey(){apiKey=document.getElementById('api-key-input').value.trim();localStorage.setItem('dc_apikey',apiKey);showToast('✓ API key saved');}
+function handleImport(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(Array.isArray(d.entries)){entries=d.entries;persist();showToast(`✓ Imported ${entries.length} entries`);}}catch{showToast('⚠ Invalid file');}};r.readAsText(file);}
+function clearAll(){if(confirm('Delete ALL entries? This cannot be undone.')){entries=[];persist();showToast('All data cleared');}}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+
+init();
+</script>
+</body>
+</html>
