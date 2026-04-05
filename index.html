@@ -6,6 +6,8 @@
 <title>Days Counter — Tax Residency Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root{
     --blue:#1565C0;--blue-lt:#E3F0FF;--blue-md:#90CAF9;
@@ -235,6 +237,18 @@
   .dow-sun{background:#FFEBEE;color:var(--red)}
   .dow-week{background:var(--grey2);color:var(--ink2)}
 
+  /* ── SOURCE BADGES ─────────────────────────── */
+  .src-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;
+    padding:1px 5px;border-radius:4px;letter-spacing:0.3px;vertical-align:middle;white-space:nowrap}
+  .src-gps{background:#E8F5E9;color:#2E7D32}
+  .src-manual{background:#FFF3E0;color:#E65100}
+  .src-future{background:#F3E5F5;color:#7B1FA2}
+  .src-legacy{background:var(--grey2);color:var(--ink2)}
+  .src-transit{background:var(--yellow-lt);color:#7B6000}
+
+  /* future-dated row tint */
+  .future-row td{background:#F9F4FF}
+
   /* ── RANGE CALENDAR PREVIEW ────────────────── */
   .range-preview{border-radius:10px;overflow:hidden;margin:10px 0 12px;border:1.5px solid var(--blue-md)}
   .range-preview-header{background:var(--blue);color:#fff;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
@@ -265,16 +279,25 @@
   .loc-detecting{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--blue-lt);border-radius:14px;margin-bottom:12px;border:1.5px solid var(--blue-md);font-size:13px;color:var(--blue)}
 
   /* ── MAP ───────────────────────────────────── */
-  #map-container{width:100%;height:calc(100vh - 220px);min-height:300px;border-radius:12px;overflow:hidden;border:1.5px solid var(--grey2)}
-  .map-stats-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  #map-container .leaflet-container{font-family:'DM Sans',sans-serif}
+  .map-stats-bar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
   .map-stat-chip{background:#fff;border:1.5px solid var(--grey2);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--ink2)}
   .map-stat-chip span{color:var(--blue);font-family:'DM Mono',monospace}
-  .map-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .map-legend{display:flex;flex-wrap:wrap;gap:8px}
   .map-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2)}
-  .map-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-  .map-view-toggle{display:flex;background:var(--grey2);border-radius:8px;padding:3px;margin-bottom:10px}
-  .map-view-toggle button{flex:1;padding:7px;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:none;color:var(--ink2);transition:all 0.2s}
+  .map-dot{border-radius:50%;flex-shrink:0}
+  .map-view-toggle{display:flex;background:var(--grey2);border-radius:8px;padding:3px}
+  .map-view-toggle button{flex:1;padding:7px 4px;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--ink2);transition:all 0.2s}
   .map-view-toggle button.active{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+  /* Custom Leaflet popup */
+  .map-popup .leaflet-popup-content-wrapper{border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.2);padding:0;overflow:hidden}
+  .map-popup .leaflet-popup-content{margin:0;min-width:160px}
+  .map-popup .leaflet-popup-tip-container{margin-top:-1px}
+  .popup-inner{padding:10px 14px}
+  .popup-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:2px}
+  .popup-sub{font-size:12px;color:var(--ink2);margin-bottom:6px}
+  .popup-nights{font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--blue);line-height:1}
+  .popup-pct{font-size:11px;color:var(--ink2);margin-top:2px}
 </style>
 </head>
 <body>
@@ -316,6 +339,7 @@
             <th style="width:30px">Day</th>
             <th>City</th>
             <th>Country</th>
+            <th style="width:36px" title="How this entry was recorded">Src</th>
             <th>×</th>
           </tr>
         </thead>
@@ -323,6 +347,14 @@
       </table>
     </div>
     <div id="hist-count" style="font-size:11px;color:var(--ink2);text-align:right;margin-top:6px;padding-right:4px"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--grey2)">
+      <span style="font-size:10px;color:var(--ink2);font-weight:600;align-self:center">Src:</span>
+      <span class="src-badge src-gps">📍 GPS auto</span>
+      <span class="src-badge src-manual">✏️ Manual</span>
+      <span class="src-badge src-future">📅 Pre-planned</span>
+      <span class="src-badge src-legacy">– Legacy</span>
+      <span class="src-badge src-transit">✈ Transit</span>
+    </div>
   </div>
 </div>
 
@@ -410,18 +442,33 @@
 </div>
 
 <!-- ═══ MAP ═══ -->
-<div id="screen-map" class="screen">
+<div id="screen-map" class="screen" style="padding:10px">
+
+  <!-- Period toggle -->
+  <div class="map-view-toggle" style="margin-bottom:8px">
+    <button class="active" id="map-period-cal" onclick="setMapPeriod('cal')">📅 Calendar Year</button>
+    <button id="map-period-tax" onclick="setMapPeriod('tax')">📆 Tax Year (Feb)</button>
+    <button id="map-period-all" onclick="setMapPeriod('all')">🌍 All Time</button>
+  </div>
+
+  <!-- Stats chips -->
   <div id="map-stats-bar" class="map-stats-bar"></div>
-  <div class="map-view-toggle">
-    <button class="active" id="map-view-countries" onclick="setMapView('countries')">🌍 Countries</button>
+
+  <!-- City / Country toggle -->
+  <div class="map-view-toggle" style="margin-bottom:8px">
+    <button class="active" id="map-view-countries" onclick="setMapView('countries')">📍 Countries</button>
     <button id="map-view-cities" onclick="setMapView('cities')">🏙 Cities</button>
   </div>
-  <div id="map-container"></div>
-  <div class="map-legend">
-    <div class="map-legend-item"><div class="map-dot" style="background:#1565C0"></div> Most nights</div>
-    <div class="map-legend-item"><div class="map-dot" style="background:#90CAF9"></div> Some nights</div>
-    <div class="map-legend-item"><div class="map-dot" style="background:#E8ECF0;border:1px solid #B0BEC5"></div> Visited</div>
-    <div class="map-legend-item"><div class="map-dot" style="background:#F9A825"></div> ✈ Transit only</div>
+
+  <!-- Leaflet map -->
+  <div id="map-container" style="height:calc(100vh - 290px);min-height:280px;border-radius:12px;overflow:hidden;border:1.5px solid var(--grey2);z-index:0"></div>
+
+  <!-- Legend -->
+  <div class="map-legend" style="margin-top:8px">
+    <div class="map-legend-item"><div class="map-dot" style="background:#1565C0;width:14px;height:14px"></div> Most nights</div>
+    <div class="map-legend-item"><div class="map-dot" style="background:#64B5F6;width:10px;height:10px"></div> Some nights</div>
+    <div class="map-legend-item"><div class="map-dot" style="background:#BBDEFB;width:8px;height:8px;border:1px solid #90CAF9"></div> Few nights</div>
+    <div class="map-legend-item"><div class="map-dot" style="background:#F9A825;width:10px;height:10px"></div> ✈ Transit</div>
   </div>
 </div>
 
@@ -586,7 +633,9 @@ let histFilter  = '';
 let lastBackup  = localStorage.getItem('dc_last_backup')||null;
 let gpsCity     = null;   // detected GPS city
 let mapView     = 'countries';
-let mapInitDone = false;
+let mapPeriod   = 'cal';
+let leafletMap  = null;
+let mapMarkers  = null;
 
 // ═══════════════════════════════════════════════════════
 //  INIT
@@ -673,55 +722,83 @@ function countryCodeToFlag(code) {
 function renderGPSCard(state) {
   const el = document.getElementById('gps-card');
   if (!el) return;
-  const today = todayStr();
-  const alreadyLogged = entries.some(e => e.date === today);
+  const today    = todayStr();
+  const existing = entries.find(e => e.date === today);
 
   if (state === 'detecting') {
-    el.innerHTML = `<div class="loc-detecting">
-      <div class="dot-anim"><span></span><span></span><span></span></div>
-      <span>Detecting your location…</span>
-    </div>`;
+    el.innerHTML = '<div class="loc-detecting"><div class="dot-anim"><span></span><span></span><span></span></div><span>Detecting your location\u2026</span></div>';
     return;
   }
   if (state === 'error' || !gpsCity) {
-    el.innerHTML = `<div class="loc-detecting" style="background:var(--yellow-lt);border-color:#FFE082;color:#7B6000">
-      📍 Location unavailable — search manually below or <a href="#" onclick="detectGPSLocation();return false" style="color:var(--blue);font-weight:600">try again</a>
-    </div>`;
+    el.innerHTML = '<div class="loc-detecting" style="background:var(--yellow-lt);border-color:#FFE082;color:#7B6000">' +
+      '📍 Location unavailable — search manually below or <a href="#" onclick="detectGPSLocation();return false" style="color:var(--blue);font-weight:600">try again</a></div>';
     return;
   }
 
-  const alreadyMsg = alreadyLogged
-    ? `<div style="background:var(--green-lt);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--green);margin-bottom:10px">✓ Today already logged — confirm overwrites it</div>`
-    : '';
+  let statusMsg = '';
+  let confirmDisabled = false;
 
-  el.innerHTML = `<div class="loc-card">
-    <div class="loc-card-header">
-      <span class="loc-icon">${gpsCity.flag}</span>
-      <div>
-        <div class="loc-city">${gpsCity.city}</div>
-        <div class="loc-country">${gpsCity.country} · Detected from your GPS</div>
-      </div>
-    </div>
-    <div class="loc-card-body">
-      ${alreadyMsg}
-      <p>Your phone is currently in <b>${gpsCity.city}</b>. Is this where you spent last night? If you flew overnight or were in a different city, use the manual search below instead.</p>
-      <div class="loc-btns">
-        <button class="loc-btn-confirm" onclick="confirmGPSLocation()">✓ Yes, save ${gpsCity.city} for today</button>
-        <button class="loc-btn-override" onclick="dismissGPSCard()">Override ↓</button>
-      </div>
-    </div>
-  </div>`;
+  if (existing) {
+    const src = existing.source;
+    if (src === 'manual') {
+      statusMsg = '<div style="background:var(--yellow-lt);border:1px solid #FFE082;border-radius:6px;padding:8px 10px;font-size:12px;color:#7B6000;margin-bottom:10px">' +
+        '<b>✏️ Manual entry exists:</b> ' + (existing.flag||'') + ' ' + existing.city +
+        ' — GPS will not overwrite a manually confirmed past entry. Delete it first to change it.</div>';
+      confirmDisabled = true;
+    } else if (src === 'future') {
+      statusMsg = '<div style="background:#F3E5F5;border:1px solid #CE93D8;border-radius:6px;padding:8px 10px;font-size:12px;color:#7B1FA2;margin-bottom:10px">' +
+        '<b>📅 Pre-planned entry:</b> ' + (existing.flag||'') + ' ' + existing.city +
+        ' — GPS will update this to your actual location.</div>';
+    } else if (src === 'gps') {
+      statusMsg = '<div style="background:var(--green-lt);border:1px solid #A5D6A7;border-radius:6px;padding:8px 10px;font-size:12px;color:var(--green);margin-bottom:10px">' +
+        '<b>📍 Already GPS-logged:</b> ' + (existing.flag||'') + ' ' + existing.city +
+        ' — confirm to update with current location.</div>';
+    } else {
+      statusMsg = '<div style="background:var(--blue-lt);border:1px solid var(--blue-md);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--blue);margin-bottom:10px">' +
+        '<b>Today already logged:</b> ' + (existing.flag||'') + ' ' + existing.city +
+        ' — confirm to overwrite with GPS location.</div>';
+    }
+  }
+
+  const confirmBtn = confirmDisabled
+    ? '<button class="loc-btn-confirm" style="opacity:0.4;cursor:not-allowed" disabled>✗ Cannot overwrite manual entry</button>'
+    : '<button class="loc-btn-confirm" onclick="confirmGPSLocation()">✓ Yes, save ' + gpsCity.city + ' for today</button>';
+
+  el.innerHTML = '<div class="loc-card">' +
+    '<div class="loc-card-header">' +
+      '<span class="loc-icon">' + gpsCity.flag + '</span>' +
+      '<div>' +
+        '<div class="loc-city">' + gpsCity.city + '</div>' +
+        '<div class="loc-country">' + gpsCity.country + ' &middot; <span class="src-badge src-gps">📍 GPS detected</span></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="loc-card-body">' +
+      statusMsg +
+      '<p>Is <b>' + gpsCity.city + '</b> where you spent last night? If you flew overnight or were somewhere else, tap Override and search manually.</p>' +
+      '<div class="loc-btns">' + confirmBtn +
+        '<button class="loc-btn-override" onclick="dismissGPSCard()">Override ↓</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 function confirmGPSLocation() {
   if (!gpsCity) return;
   const date = document.getElementById('single-date').value || todayStr();
+  const existing = entries.find(e => e.date === date);
+
+  // Don't overwrite a past manual entry — show warning instead
+  if (existing && existing.source === 'manual' && date < todayStr()) {
+    showToast('⚠ Past manual entry protected — delete it first to override');
+    return;
+  }
+
   entries = entries.filter(e => e.date !== date);
-  entries.push({ date, type: 'night', ...gpsCity });
+  entries.push({ date, type: 'night', source: 'gps', ...gpsCity });
   persist();
   showToast(`✓ ${gpsCity.city} saved for ${fmtShort(date)}`);
   document.getElementById('gps-card').innerHTML = `<div class="loc-detecting" style="background:var(--green-lt);border-color:#A5D6A7;color:var(--green)">
-    ✓ Saved — ${gpsCity.flag} ${gpsCity.city}, ${gpsCity.country}
+    ✓ Saved — ${gpsCity.flag} ${gpsCity.city}, ${gpsCity.country} <span class="src-badge src-gps" style="margin-left:6px">📍 GPS</span>
   </div>`;
 }
 
@@ -733,8 +810,14 @@ function dismissGPSCard() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  MAP
+//  MAP — Leaflet.js
 // ═══════════════════════════════════════════════════════
+function setMapPeriod(p) {
+  mapPeriod = p;
+  ['cal','tax','all'].forEach(x => document.getElementById('map-period-'+x).classList.toggle('active', x===p));
+  renderMap();
+}
+
 function setMapView(v) {
   mapView = v;
   document.getElementById('map-view-countries').classList.toggle('active', v==='countries');
@@ -742,205 +825,173 @@ function setMapView(v) {
   renderMap();
 }
 
+function getMapDateRange() {
+  const today = new Date(todayStr()+'T12:00:00');
+  const yr    = today.getFullYear();
+  if (mapPeriod === 'cal') return { from:`${yr}-01-01`, to:`${yr}-12-31`, label:`Calendar ${yr}` };
+  if (mapPeriod === 'tax') return { from:`${yr-1}-03-01`, to:febEnd(yr), label:`Tax Year Mar ${yr-1}–Feb ${yr}` };
+  return { from:'2000-01-01', to:'2099-12-31', label:'All Time' };
+}
+
 function renderMap() {
-  // Build stats
-  const allStats = calcStats('2000-01-01','2099-12-31');
-  const total = allStats.total;
-  const nCountries = Object.keys(allStats.byCo).length;
-  const nCities = Object.keys(allStats.byCity).length;
+  const { from, to, label } = getMapDateRange();
+  const stats = calcStats(from, to);
+  const total = stats.total;
+  const nCo   = Object.keys(stats.byCo).length;
+  const nCity = Object.keys(stats.byCity).length;
 
-  document.getElementById('map-stats-bar').innerHTML = `
-    <div class="map-stat-chip">🌍 <span>${nCountries}</span> countries</div>
-    <div class="map-stat-chip">🏙 <span>${nCities}</span> cities</div>
-    <div class="map-stat-chip">🌙 <span>${total}</span> nights total</div>`;
+  document.getElementById('map-stats-bar').innerHTML =
+    '<div class="map-stat-chip">🌍 <span>' + nCo + '</span> countries</div>' +
+    '<div class="map-stat-chip">🏙 <span>' + nCity + '</span> cities</div>' +
+    '<div class="map-stat-chip">🌙 <span>' + total + '</span> nights</div>' +
+    '<div class="map-stat-chip" style="color:var(--ink2);font-size:11px">' + label + '</div>';
 
-  if (!total) {
-    document.getElementById('map-container').innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink2);font-size:14px">Add entries to see your travel map</div>`;
-    return;
+  // Initialise Leaflet map once
+  if (!leafletMap) {
+    leafletMap = L.map('map-container', {
+      center: [25, 15],
+      zoom: 2,
+      minZoom: 1,
+      maxZoom: 14,
+      zoomControl: true,
+      attributionControl: true
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(leafletMap);
+    mapMarkers = L.layerGroup().addTo(leafletMap);
+  } else {
+    mapMarkers.clearLayers();
   }
 
-  if (mapView === 'countries') renderCountryMap(allStats);
-  else renderCityMap(allStats);
-}
+  if (!total) return;
 
-function renderCountryMap(stats) {
-  const container = document.getElementById('map-container');
-  const coData = Object.entries(stats.byCo).sort((a,b)=>b[1].nights-a[1].nights);
-  const maxN = coData.length ? coData[0][1].nights : 1;
+  const items = [];
 
-  // Get city coords for each country (use first city found)
-  const items = coData.map(([country, d]) => {
-    const cityEntry = Object.values(stats.byCity).find(c => c.country === country);
-    const coords = getApproxCoords(country, cityEntry?.city);
-    return { country, nights: d.nights, flag: d.flag, coords, pct: Math.round(d.nights/stats.total*100) };
-  }).filter(i => i.coords);
+  if (mapView === 'countries') {
+    Object.entries(stats.byCo).forEach(([country, d]) => {
+      const cityEntry = Object.values(stats.byCity).find(c => c.country === country);
+      const coords = getApproxCoords(country, cityEntry?.city);
+      if (coords) items.push({ label: country, sublabel: '', nights: d.nights, flag: d.flag, coords, pct: total>0?Math.round(d.nights/total*100):0, isTransit: false });
+    });
+    // Transit marker if any
+    if (stats.transit > 0) {
+      items.push({ label: 'Transit Nights', sublabel: 'Overnight flights', nights: stats.transit, flag: '✈', coords: [35, 20], pct: Math.round(stats.transit/total*100), isTransit: true });
+    }
+  } else {
+    Object.values(stats.byCity).forEach(c => {
+      const coords = getApproxCoords(c.country, c.city);
+      if (coords) items.push({ label: c.city, sublabel: c.country, nights: c.nights, flag: c.flag, coords, pct: total>0?Math.round(c.nights/total*100):0, isTransit: false });
+    });
+  }
 
-  // Transit entries
-  const transitEntries = entries.filter(e=>e.type==='transit');
+  if (!items.length) return;
 
-  container.innerHTML = buildSVGMap(items, maxN, 'country', stats.transit);
-}
+  const maxN = Math.max(...items.map(i => i.nights));
+  const bounds = [];
 
-function renderCityMap(stats) {
-  const container = document.getElementById('map-container');
-  const cityData = Object.values(stats.byCity).sort((a,b)=>b.nights-a.nights);
-  const maxN = cityData.length ? cityData[0].nights : 1;
-
-  const items = cityData.map(c => {
-    const coords = getApproxCoords(c.country, c.city);
-    return { ...c, coords, pct: Math.round(c.nights/stats.total*100) };
-  }).filter(i => i.coords);
-
-  container.innerHTML = buildSVGMap(items, maxN, 'city', stats.transit);
-}
-
-function buildSVGMap(items, maxN, mode, transitNights) {
-  // Simple equirectangular world map using SVG
-  // Map dimensions: -180 to 180 lng, -90 to 90 lat
-  const W = 800, H = 400;
-  const lngToX = lng => (lng + 180) / 360 * W;
-  const latToY = lat => (90 - lat) / 180 * H;
-
-  // Draw simplified world outline paths (major landmasses as rough polygons)
-  const worldPaths = getWorldPaths();
-
-  let pins = '';
-  let tooltip = '';
-  items.forEach((item, i) => {
+  items.forEach(item => {
     const [lat, lng] = item.coords;
-    const x = lngToX(lng), y = latToY(lat);
-    const ratio = item.nights / maxN;
-    const r = Math.max(6, Math.min(22, 6 + ratio * 16));
-    const opacity = 0.4 + ratio * 0.6;
-    const color = ratio > 0.6 ? '#1565C0' : ratio > 0.25 ? '#42A5F5' : '#90CAF9';
-    const label = mode === 'city' ? item.city : item.country;
-    const shortLabel = label.length > 12 ? label.substring(0,11)+'…' : label;
+    const ratio  = item.nights / maxN;
+    const radius = Math.max(18000, Math.min(80000, 18000 + ratio * 62000));
 
-    pins += `<g class="map-pin" style="cursor:pointer" onclick="this.querySelector('.map-tip').style.display=this.querySelector('.map-tip').style.display==='block'?'none':'block'">
-      <circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="${opacity}" stroke="#fff" stroke-width="1.5"/>
-      <text x="${x}" y="${y+1}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="${r>10?'9':'7'}" font-weight="700" font-family="DM Sans,sans-serif">${item.nights}</text>
-      <g class="map-tip" style="display:none">
-        <rect x="${x+r+2}" y="${y-16}" width="${Math.max(80, shortLabel.length*7+20)}" height="32" rx="6" fill="#1A1A2E" opacity="0.92"/>
-        <text x="${x+r+8}" y="${y-4}" fill="#fff" font-size="11" font-weight="700" font-family="DM Sans,sans-serif">${item.flag||''} ${shortLabel}</text>
-        <text x="${x+r+8}" y="${y+10}" fill="#90CAF9" font-size="10" font-family="DM Mono,monospace">${item.nights}n · ${item.pct}%</text>
-      </g>
-    </g>`;
+    // Colour based on ratio
+    let color, fillColor;
+    if (item.isTransit) {
+      color = '#E65100'; fillColor = '#F9A825';
+    } else if (ratio > 0.65) {
+      color = '#0D47A1'; fillColor = '#1565C0';
+    } else if (ratio > 0.3) {
+      color = '#1565C0'; fillColor = '#42A5F5';
+    } else {
+      color = '#1976D2'; fillColor = '#BBDEFB';
+    }
+
+    const circle = L.circle([lat, lng], {
+      radius,
+      color,
+      fillColor,
+      fillOpacity: 0.55,
+      weight: 2,
+      opacity: 0.9
+    });
+
+    // Popup HTML
+    const popupHTML =
+      '<div class="popup-inner">' +
+        '<div class="popup-title">' + (item.flag||'') + ' ' + item.label + '</div>' +
+        (item.sublabel ? '<div class="popup-sub">' + item.sublabel + '</div>' : '') +
+        '<div class="popup-nights">' + item.nights + '</div>' +
+        '<div class="popup-pct">' + (item.isTransit ? 'transit nights' : 'nights · ' + item.pct + '% of period') + '</div>' +
+      '</div>';
+
+    circle.bindPopup(popupHTML, { className: 'map-popup', maxWidth: 200 });
+
+    // Also add a small label marker for big circles
+    if (ratio > 0.15) {
+      const icon = L.divIcon({
+        className: '',
+        html: '<div style="background:' + color + ';color:#fff;border-radius:20px;padding:2px 7px;font-size:11px;font-weight:700;font-family:DM Sans,sans-serif;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.3)">' + item.nights + 'n</div>',
+        iconAnchor: [18, 8]
+      });
+      L.marker([lat, lng], { icon, interactive: false }).addTo(mapMarkers);
+    }
+
+    circle.addTo(mapMarkers);
+    bounds.push([lat, lng]);
   });
 
-  // Transit indicator
-  const transitBadge = transitNights > 0
-    ? `<text x="4" y="${H-6}" fill="#F9A825" font-size="10" font-family="DM Sans,sans-serif" font-weight="600">✈ ${transitNights} transit nights</text>`
-    : '';
+  // Fit map to show all markers
+  if (bounds.length === 1) {
+    leafletMap.setView(bounds[0], 5);
+  } else if (bounds.length > 1) {
+    try { leafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 8 }); } catch(e) {}
+  }
 
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;background:#EEF4FB">
-    <!-- World landmasses -->
-    ${worldPaths}
-    <!-- Pins -->
-    ${pins}
-    ${transitBadge}
-  </svg>`;
+  // Force redraw (fixes rendering issues when tab becomes visible)
+  setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 100);
 }
 
 // ── Approximate lat/lng for known cities & countries ──
 function getApproxCoords(country, city) {
-  const COORDS = {
-    // Cities (city|country → [lat,lng])
-    'London|United Kingdom':[51.5,-0.12],'Edinburgh|United Kingdom':[55.95,-3.19],
-    'Manchester|United Kingdom':[53.48,-2.24],'Birmingham|United Kingdom':[52.48,-1.9],
-    'New York|United States':[40.71,-74.0],'Los Angeles|United States':[34.05,-118.24],
-    'Chicago|United States':[41.88,-87.63],'Miami|United States':[25.77,-80.19],
-    'San Francisco|United States':[37.77,-122.42],'Houston|United States':[29.76,-95.37],
-    'Boston|United States':[42.36,-71.06],'Seattle|United States':[47.6,-122.33],
-    'Washington DC|United States':[38.9,-77.04],'Atlanta|United States':[33.75,-84.39],
-    'Dallas|United States':[32.78,-96.8],'Las Vegas|United States':[36.17,-115.14],
-    'Nashville|United States':[36.17,-86.78],'Charleston|United States':[32.78,-79.93],
-    'Denver|United States':[39.74,-104.98],'Austin|United States':[30.27,-97.74],
-    'Orlando|United States':[28.54,-81.38],'Tampa|United States':[27.95,-82.46],
-    'Charlotte|United States':[35.23,-80.84],'Phoenix|United States':[33.45,-112.07],
-    'New Orleans|United States':[29.95,-90.07],'Portland|United States':[45.52,-122.68],
-    'Minneapolis|United States':[44.98,-93.27],'San Diego|United States':[32.72,-117.16],
-    'Singapore|Singapore':[1.35,103.82],'Dubai|United Arab Emirates':[25.2,55.27],
-    'Abu Dhabi|United Arab Emirates':[24.47,54.37],'Doha|Qatar':[25.29,51.53],
-    'Riyadh|Saudi Arabia':[24.69,46.72],'Jeddah|Saudi Arabia':[21.54,39.19],
-    'Manama|Bahrain':[26.22,50.59],'Kuwait City|Kuwait':[29.37,47.98],'Muscat|Oman':[23.61,58.59],
-    'Hong Kong|Hong Kong':[22.32,114.17],'Tokyo|Japan':[35.68,139.69],'Osaka|Japan':[34.69,135.5],
-    'Seoul|South Korea':[37.57,126.98],'Shanghai|China':[31.23,121.47],'Beijing|China':[39.91,116.39],
-    'Shenzhen|China':[22.54,114.06],'Taipei|Taiwan':[25.05,121.56],
-    'Bangkok|Thailand':[13.75,100.52],'Phuket|Thailand':[7.88,98.39],
-    'Kuala Lumpur|Malaysia':[3.14,101.69],'Jakarta|Indonesia':[-6.21,106.85],'Bali|Indonesia':[-8.34,115.09],
-    'Ho Chi Minh City|Vietnam':[10.82,106.63],'Hanoi|Vietnam':[21.03,105.85],
-    'Manila|Philippines':[14.6,120.98],
-    'Mumbai|India':[19.08,72.88],'Delhi|India':[28.63,77.22],'Bangalore|India':[12.97,77.59],
-    'Chennai|India':[13.08,80.27],'Kolkata|India':[22.57,88.36],'Hyderabad|India':[17.38,78.49],
-    'Colombo|Sri Lanka':[6.93,79.85],'Karachi|Pakistan':[24.86,67.01],
-    'Sydney|Australia':[-33.87,151.21],'Melbourne|Australia':[-37.81,144.96],
-    'Brisbane|Australia':[-27.47,153.03],'Perth|Australia':[-31.95,115.86],
+  const C = {
+    'London|United Kingdom':[51.5,-0.12],'Edinburgh|United Kingdom':[55.95,-3.19],'Manchester|United Kingdom':[53.48,-2.24],'Birmingham|United Kingdom':[52.48,-1.9],'Glasgow|United Kingdom':[55.86,-4.25],'Bristol|United Kingdom':[51.45,-2.59],'Leeds|United Kingdom':[53.8,-1.55],'Liverpool|United Kingdom':[53.41,-2.98],
+    'New York|United States':[40.71,-74.0],'Los Angeles|United States':[34.05,-118.24],'Chicago|United States':[41.88,-87.63],'Miami|United States':[25.77,-80.19],'San Francisco|United States':[37.77,-122.42],'Houston|United States':[29.76,-95.37],'Boston|United States':[42.36,-71.06],'Seattle|United States':[47.6,-122.33],'Washington DC|United States':[38.9,-77.04],'Atlanta|United States':[33.75,-84.39],'Dallas|United States':[32.78,-96.8],'Las Vegas|United States':[36.17,-115.14],'Nashville|United States':[36.17,-86.78],'Charleston|United States':[32.78,-79.93],'Denver|United States':[39.74,-104.98],'Austin|United States':[30.27,-97.74],'Orlando|United States':[28.54,-81.38],'Tampa|United States':[27.95,-82.46],'Charlotte|United States':[35.23,-80.84],'Phoenix|United States':[33.45,-112.07],'New Orleans|United States':[29.95,-90.07],'Portland|United States':[45.52,-122.68],'Minneapolis|United States':[44.98,-93.27],'San Diego|United States':[32.72,-117.16],
+    'Toronto|Canada':[43.65,-79.38],'Vancouver|Canada':[49.25,-123.12],'Montreal|Canada':[45.5,-73.57],'Calgary|Canada':[51.05,-114.06],
+    'Singapore|Singapore':[1.35,103.82],
+    'Dubai|United Arab Emirates':[25.2,55.27],'Abu Dhabi|United Arab Emirates':[24.47,54.37],'Sharjah|United Arab Emirates':[25.35,55.39],
+    'Doha|Qatar':[25.29,51.53],'Riyadh|Saudi Arabia':[24.69,46.72],'Jeddah|Saudi Arabia':[21.54,39.19],'Manama|Bahrain':[26.22,50.59],'Kuwait City|Kuwait':[29.37,47.98],'Muscat|Oman':[23.61,58.59],
+    'Hong Kong|Hong Kong':[22.32,114.17],'Tokyo|Japan':[35.68,139.69],'Osaka|Japan':[34.69,135.5],'Seoul|South Korea':[37.57,126.98],'Shanghai|China':[31.23,121.47],'Beijing|China':[39.91,116.39],'Shenzhen|China':[22.54,114.06],'Taipei|Taiwan':[25.05,121.56],
+    'Bangkok|Thailand':[13.75,100.52],'Phuket|Thailand':[7.88,98.39],'Kuala Lumpur|Malaysia':[3.14,101.69],'Jakarta|Indonesia':[-6.21,106.85],'Bali|Indonesia':[-8.34,115.09],'Ho Chi Minh City|Vietnam':[10.82,106.63],'Hanoi|Vietnam':[21.03,105.85],'Manila|Philippines':[14.6,120.98],
+    'Mumbai|India':[19.08,72.88],'Delhi|India':[28.63,77.22],'Bangalore|India':[12.97,77.59],'Chennai|India':[13.08,80.27],'Kolkata|India':[22.57,88.36],'Hyderabad|India':[17.38,78.49],'Colombo|Sri Lanka':[6.93,79.85],
+    'Sydney|Australia':[-33.87,151.21],'Melbourne|Australia':[-37.81,144.96],'Brisbane|Australia':[-27.47,153.03],'Perth|Australia':[-31.95,115.86],
     'Auckland|New Zealand':[-36.86,174.76],'Wellington|New Zealand':[-41.29,174.78],
-    'Paris|France':[48.85,2.35],'Nice|France':[43.7,7.27],'Lyon|France':[45.75,4.85],
-    'Berlin|Germany':[52.52,13.4],'Munich|Germany':[48.14,11.58],'Frankfurt|Germany':[50.11,8.68],'Hamburg|Germany':[53.55,9.99],
-    'Amsterdam|Netherlands':[52.37,4.89],'Zurich|Switzerland':[47.38,8.54],'Geneva|Switzerland':[46.2,6.15],'Basel|Switzerland':[47.56,7.59],
-    'Madrid|Spain':[40.42,-3.7],'Barcelona|Spain':[41.39,2.15],
+    'Paris|France':[48.85,2.35],'Nice|France':[43.7,7.27],'Lyon|France':[45.75,4.85],'Berlin|Germany':[52.52,13.4],'Munich|Germany':[48.14,11.58],'Frankfurt|Germany':[50.11,8.68],'Hamburg|Germany':[53.55,9.99],
+    'Amsterdam|Netherlands':[52.37,4.89],'Rotterdam|Netherlands':[51.92,4.48],'Zurich|Switzerland':[47.38,8.54],'Geneva|Switzerland':[46.2,6.15],'Basel|Switzerland':[47.56,7.59],
+    'Madrid|Spain':[40.42,-3.7],'Barcelona|Spain':[41.39,2.15],'Seville|Spain':[37.39,-5.99],
     'Milan|Italy':[45.46,9.19],'Rome|Italy':[41.9,12.5],'Florence|Italy':[43.77,11.25],'Venice|Italy':[45.44,12.33],
-    'Lisbon|Portugal':[38.72,-9.14],'Porto|Portugal':[41.15,-8.61],
-    'Dublin|Ireland':[53.33,-6.25],'Stockholm|Sweden':[59.33,18.07],'Copenhagen|Denmark':[55.68,12.57],
-    'Oslo|Norway':[59.91,10.75],'Helsinki|Finland':[60.17,24.94],'Vienna|Austria':[48.21,16.37],
-    'Brussels|Belgium':[50.85,4.35],'Warsaw|Poland':[52.23,21.01],'Prague|Czech Republic':[50.08,14.44],
-    'Budapest|Hungary':[47.5,19.04],'Athens|Greece':[37.98,23.73],'Istanbul|Turkey':[41.01,28.95],
-    'Tel Aviv|Israel':[32.08,34.78],'Beirut|Lebanon':[33.89,35.5],
+    'Lisbon|Portugal':[38.72,-9.14],'Porto|Portugal':[41.15,-8.61],'Dublin|Ireland':[53.33,-6.25],
+    'Stockholm|Sweden':[59.33,18.07],'Copenhagen|Denmark':[55.68,12.57],'Oslo|Norway':[59.91,10.75],'Helsinki|Finland':[60.17,24.94],'Vienna|Austria':[48.21,16.37],
+    'Brussels|Belgium':[50.85,4.35],'Warsaw|Poland':[52.23,21.01],'Prague|Czech Republic':[50.08,14.44],'Budapest|Hungary':[47.5,19.04],'Athens|Greece':[37.98,23.73],'Istanbul|Turkey':[41.01,28.95],
+    'Tel Aviv|Israel':[32.08,34.78],'Cairo|Egypt':[30.06,31.25],'Casablanca|Morocco':[33.59,-7.62],'Marrakech|Morocco':[31.63,-8.01],
     'Johannesburg|South Africa':[-26.2,28.04],'Cape Town|South Africa':[-33.93,18.42],'Durban|South Africa':[-29.86,31.02],
-    'Nairobi|Kenya':[-1.29,36.82],'Lagos|Nigeria':[6.52,3.38],'Accra|Ghana':[5.56,-0.2],
-    'Cairo|Egypt':[30.06,31.25],'Casablanca|Morocco':[33.59,-7.62],'Marrakech|Morocco':[31.63,-8.01],
-    'Toronto|Canada':[43.65,-79.38],'Vancouver|Canada':[49.25,-123.12],'Montreal|Canada':[45.5,-73.57],
-    'São Paulo|Brazil':[-23.55,-46.63],'Rio de Janeiro|Brazil':[-22.91,-43.18],
-    'Buenos Aires|Argentina':[-34.61,-58.38],'Santiago|Chile':[-33.45,-70.67],
-    'Lima|Peru':[-12.05,-77.04],'Bogotá|Colombia':[4.71,-74.07],
-    'Mexico City|Mexico':[19.43,-99.13],'Panama City|Panama':[8.99,-79.52],
-    'Mauritius|Mauritius':[-20.16,57.5],'Maldives|Maldives':[3.2,73.22],
-    'George Town|Cayman Islands':[19.3,-81.39],
-    // Country fallbacks
-    'United Kingdom':[54,-2],'United States':[38,-97],'France':[46,2],'Germany':[51,10],
-    'Italy':[42,12],'Spain':[40,-4],'Portugal':[39,-8],'Netherlands':[52,5],
-    'Switzerland':[47,8],'Belgium':[50,4],'Austria':[47,14],'Sweden':[59,18],
-    'Norway':[62,10],'Denmark':[56,10],'Finland':[62,25],'Ireland':[53,-8],
-    'Poland':[52,20],'Czech Republic':[50,15],'Hungary':[47,19],'Greece':[39,22],
-    'Turkey':[39,35],'Israel':[31,35],'Saudi Arabia':[24,45],'UAE':[24,54],
-    'United Arab Emirates':[24,54],'Qatar':[25,51],'Bahrain':[26,50],'Kuwait':[29,48],'Oman':[22,58],
-    'India':[20,77],'China':[35,105],'Japan':[36,138],'South Korea':[37,128],
-    'Singapore':[1.35,103.82],'Thailand':[15,101],'Malaysia':[4,109],'Indonesia':[-5,120],
-    'Vietnam':[16,108],'Philippines':[13,122],'Australia':[-25,133],'New Zealand':[-41,174],
-    'South Africa':[-29,25],'Kenya':[0,38],'Nigeria':[9,8],'Ghana':[8,-1],
-    'Egypt':[26,30],'Morocco':[32,-5],'Ethiopia':[9,40],'Tanzania':[-6,35],
-    'Canada':[56,-106],'Brazil':[-15,-47],'Argentina':[-35,-65],'Chile':[-30,-71],
-    'Colombia':[4,-74],'Peru':[-10,-76],'Mexico':[23,-102],'Panama':[9,-80],
+    'Nairobi|Kenya':[-1.29,36.82],'Lagos|Nigeria':[6.52,3.38],'Accra|Ghana':[5.56,-0.2],'Kigali|Rwanda':[-1.95,30.06],
+    'São Paulo|Brazil':[-23.55,-46.63],'Rio de Janeiro|Brazil':[-22.91,-43.18],'Buenos Aires|Argentina':[-34.61,-58.38],'Santiago|Chile':[-33.45,-70.67],'Lima|Peru':[-12.05,-77.04],'Bogotá|Colombia':[4.71,-74.07],'Mexico City|Mexico':[19.43,-99.13],'Panama City|Panama':[8.99,-79.52],
+    'Mauritius|Mauritius':[-20.16,57.5],'Maldives|Maldives':[3.2,73.22],'George Town|Cayman Islands':[19.3,-81.39],'Hamilton|Bermuda':[32.29,-64.78],
+    // Country centre fallbacks
+    'United Kingdom':[54,-2],'United States':[38,-97],'Canada':[56,-106],'France':[46,2],'Germany':[51,10],'Italy':[42,12],'Spain':[40,-4],'Portugal':[39,-8],'Netherlands':[52,5],'Switzerland':[47,8],'Belgium':[50,4],'Austria':[47,14],'Sweden':[59,18],'Norway':[62,10],'Denmark':[56,10],'Finland':[62,25],'Ireland':[53,-8],'Poland':[52,20],'Czech Republic':[50,15],'Hungary':[47,19],'Greece':[39,22],'Turkey':[39,35],'Israel':[31,35],
+    'Saudi Arabia':[24,45],'United Arab Emirates':[24,54],'Qatar':[25,51],'Bahrain':[26,50],'Kuwait':[29,48],'Oman':[22,58],
+    'India':[20,77],'China':[35,105],'Japan':[36,138],'South Korea':[37,128],'Singapore':[1.35,103.82],'Thailand':[15,101],'Malaysia':[4,109],'Indonesia':[-5,120],'Vietnam':[16,108],'Philippines':[13,122],
+    'Australia':[-25,133],'New Zealand':[-41,174],
+    'South Africa':[-29,25],'Kenya':[0,38],'Nigeria':[9,8],'Ghana':[8,-1],'Egypt':[26,30],'Morocco':[32,-5],'Ethiopia':[9,40],'Tanzania':[-6,35],'Rwanda':[-2,30],
+    'Brazil':[-15,-47],'Argentina':[-35,-65],'Chile':[-30,-71],'Colombia':[4,-74],'Peru':[-10,-76],'Mexico':[23,-102],'Panama':[9,-80],
     'Mauritius':[-20,57],'Maldives':[4,73],'Hong Kong':[22,114],'Taiwan':[24,121],
   };
-  const cityKey = city ? `${city}|${country}` : null;
-  if (cityKey && COORDS[cityKey]) return COORDS[cityKey];
-  if (COORDS[country]) return COORDS[country];
+  const ck = city ? city+'|'+country : null;
+  if (ck && C[ck]) return C[ck];
+  if (C[country]) return C[country];
   return null;
-}
-
-function getWorldPaths() {
-  // Simplified SVG paths for world landmasses (equirectangular projection, 800x400)
-  return `
-  <path d="M320,85 L335,80 L355,82 L365,75 L380,78 L390,88 L385,98 L370,102 L355,98 L340,100 L325,95 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M335,100 L350,98 L370,102 L380,110 L375,122 L360,128 L345,125 L335,115 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M355,75 L375,70 L400,72 L420,68 L440,72 L455,80 L460,92 L450,100 L435,105 L415,102 L395,105 L380,110 L370,102 L365,90 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M410,68 L440,62 L465,65 L480,72 L490,82 L485,95 L470,100 L455,98 L450,100 L440,92 L430,85 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M480,72 L510,68 L535,72 L550,82 L558,95 L550,108 L535,112 L520,108 L505,112 L492,105 L485,95 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M540,72 L570,68 L595,72 L610,82 L615,96 L605,110 L590,115 L575,112 L560,115 L548,108 L545,96 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M595,72 L620,68 L640,72 L650,85 L645,100 L630,108 L615,105 L605,110 L600,95 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M390,105 L415,102 L430,110 L435,125 L425,140 L408,145 L392,140 L382,128 L385,115 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M190,82 L220,78 L245,80 L260,90 L265,105 L258,118 L240,125 L220,122 L200,118 L188,105 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M225,130 L248,128 L262,138 L265,152 L255,165 L238,168 L222,162 L215,148 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M195,155 L215,150 L225,160 L222,175 L208,182 L195,175 L190,163 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M208,182 L225,178 L240,182 L245,195 L235,208 L218,212 L205,205 L200,192 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M550,200 L600,195 L650,200 L680,215 L695,235 L690,260 L670,278 L640,285 L600,282 L568,270 L548,250 L540,228 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M600,282 L640,285 L665,295 L670,315 L655,330 L630,335 L605,328 L588,312 L590,295 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M440,148 L465,142 L490,145 L508,158 L512,175 L500,190 L480,195 L460,190 L444,175 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M355,148 L382,142 L400,150 L408,165 L400,180 L382,185 L360,180 L348,165 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  <path d="M58,120 L90,115 L115,118 L130,130 L132,148 L118,162 L95,168 L70,162 L52,148 L50,132 Z" fill="#D4E6F1" stroke="#B8CDD9" stroke-width="0.5"/>
-  `;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1093,7 +1144,7 @@ function renderHistory() {
         html+=`<tr class="gap-row">
           <td class="date-col">${fmtShort(d)}</td>
           <td>${dow}</td>
-          <td colspan="2"><span class="gap-badge" onclick="prefillDate('${d}')">⚠ MISSING — tap to fill</span></td>
+          <td colspan="3"><span class="gap-badge" onclick="prefillDate('${d}')">⚠ MISSING — tap to fill</span></td>
           <td class="del-col"></td>
         </tr>`;
         d=addDays(d,1);
@@ -1106,7 +1157,7 @@ function renderHistory() {
   }
 
   if (!displayed.length) {
-    tbody.innerHTML=`<tr><td colspan="5" class="empty-state" style="padding:28px;text-align:center;color:var(--ink2)">
+    tbody.innerHTML=`<tr><td colspan="6" class="empty-state" style="padding:28px;text-align:center;color:var(--ink2)">
       ${histFilter?'No matching entries':'No entries yet — tap + Add to start'}</td></tr>`;
     document.getElementById('hist-count').textContent='';
     return;
@@ -1131,7 +1182,7 @@ function renderHistory() {
             html+=`<tr class="gap-row">
               <td class="date-col">${fmtShort(gd)}</td>
               <td>${dowBadge(gd)}</td>
-              <td colspan="2"><span class="gap-badge" onclick="prefillDate('${gd}')">⚠ MISSING — tap to fill</span></td>
+              <td colspan="3"><span class="gap-badge" onclick="prefillDate('${gd}')">⚠ MISSING — tap to fill</span></td>
               <td class="del-col"></td>
             </tr>`;
           }
@@ -1148,7 +1199,7 @@ function renderHistory() {
             html+=`<tr class="gap-row">
               <td class="date-col">${fmtShort(gd)}</td>
               <td>${dowBadge(gd)}</td>
-              <td colspan="2"><span class="gap-badge" onclick="prefillDate('${gd}')">⚠ MISSING — tap to fill</span></td>
+              <td colspan="3"><span class="gap-badge" onclick="prefillDate('${gd}')">⚠ MISSING — tap to fill</span></td>
               <td class="del-col"></td>
             </tr>`;
           }
@@ -1158,7 +1209,7 @@ function renderHistory() {
     }
 
     const isTransit = e.type==='transit';
-    const rowClass  = isTransit ? 'transit-row' : '';
+    const rowClass  = isTransit ? 'transit-row' : (e.date > today ? 'future-row' : '');
     const cityTxt   = isTransit ? (e.route||'In Transit') : e.city;
     const countryTxt= isTransit ? '✈ Transit' : e.country;
     const flagTxt   = e.flag||'';
@@ -1167,6 +1218,7 @@ function renderHistory() {
       <td>${dowBadge(e.date)}</td>
       <td class="city-col">${flagTxt} ${cityTxt}</td>
       <td class="country-col">${countryTxt}</td>
+      <td style="text-align:center">${sourceBadge(e)}</td>
       <td class="del-col"><button class="del-btn" onclick="deleteEntry('${e.date}')">×</button></td>
     </tr>`;
     prev = e.date;
@@ -1509,10 +1561,22 @@ function selectCity(city, mode) {
 // ═══════════════════════════════════════════════════════
 function dowBadge(dateStr) {
   const dt  = new Date(dateStr+'T12:00:00');
-  const dow = dt.getDay(); // 0=Sun, 6=Sat
-  const name= dt.toLocaleDateString('en-GB',{weekday:'short'}); // Mon, Tue…
+  const dow = dt.getDay();
+  const name= dt.toLocaleDateString('en-GB',{weekday:'short'});
   const cls = dow===0?'dow-sun':dow===6?'dow-sat':'dow-week';
   return `<span class="dow ${cls}">${name}</span>`;
+}
+
+function sourceBadge(entry) {
+  if (entry.type === 'transit') return `<span class="src-badge src-transit" title="Transit night">✈</span>`;
+  const src = entry.source;
+  if (src === 'gps')    return `<span class="src-badge src-gps"    title="Auto-detected by GPS">📍</span>`;
+  if (src === 'future') return `<span class="src-badge src-future"  title="Pre-planned (GPS can update)">📅</span>`;
+  if (src === 'manual') return `<span class="src-badge src-manual"  title="Manually entered">✏️</span>`;
+  // Legacy entries (no source field) — infer from date
+  const today = todayStr();
+  if (!src && entry.date > today) return `<span class="src-badge src-future" title="Pre-planned (GPS can update)">📅</span>`;
+  return `<span class="src-badge src-legacy" title="Entered without GPS (legacy)">–</span>`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1621,8 +1685,9 @@ function saveSingle() {
   const date=document.getElementById('single-date').value;
   if(!date){showToast('⚠ Select a date');return;}
   if(!selectedCity.single){showToast('⚠ Select a city first');return;}
+  const source = date > todayStr() ? 'future' : 'manual';
   entries=entries.filter(e=>e.date!==date);
-  entries.push({date,type:'night',...selectedCity.single});
+  entries.push({date,type:'night',source,...selectedCity.single});
   persist(); showToast(`✓ ${fmtShort(date)} — ${selectedCity.single.city}`);
   selectedCity.single=null;
   document.getElementById('city-search').value='';
@@ -1638,8 +1703,9 @@ function saveRange() {
   let cur=new Date(from+'T12:00:00'), end=new Date(to+'T12:00:00'), count=0;
   while(cur<=end){
     const ds=cur.toISOString().split('T')[0];
+    const source = ds > todayStr() ? 'future' : 'manual';
     entries=entries.filter(e=>e.date!==ds);
-    entries.push({date:ds,type:'night',...selectedCity.range});
+    entries.push({date:ds,type:'night',source,...selectedCity.range});
     cur.setDate(cur.getDate()+1); count++;
   }
   persist(); showToast(`✓ ${count} nights in ${selectedCity.range.city}`);
@@ -1652,8 +1718,9 @@ function saveRange() {
 function saveTravel() {
   const date=document.getElementById('travel-date').value, route=document.getElementById('travel-route').value.trim()||'In transit';
   if(!date){showToast('⚠ Select a date');return;}
+  const source = date > todayStr() ? 'future' : 'manual';
   entries=entries.filter(e=>e.date!==date);
-  entries.push({date,type:'transit',city:'Transit',country:'Transit',countryCode:'TR',flag:'✈',route});
+  entries.push({date,type:'transit',source,city:'Transit',country:'Transit',countryCode:'TR',flag:'✈',route});
   persist(); showToast(`✓ Transit — ${fmtShort(date)}`);
 }
 
