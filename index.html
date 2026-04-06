@@ -265,6 +265,29 @@
   .range-cal-day.weekend{color:var(--red)}
   .range-cal-day.in-range.weekend{color:#0D47A1}
 
+  /* ── YOY CHART ─────────────────────────────── */
+  .yoy-country-block{margin-bottom:20px}
+  .yoy-country-header{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:8px;padding-bottom:5px;border-bottom:1.5px solid var(--grey2)}
+  .yoy-bars{display:flex;flex-direction:column;gap:5px}
+  .yoy-bar-row{display:flex;align-items:center;gap:8px}
+  .yoy-year-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink2);min-width:38px;text-align:right}
+  .yoy-bar-track{flex:1;height:22px;background:var(--grey2);border-radius:6px;overflow:hidden;position:relative}
+  .yoy-bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:700;color:#fff;transition:width 0.5s ease;white-space:nowrap;min-width:0}
+  .yoy-bar-fill.this-yr{background:var(--blue)}
+  .yoy-bar-fill.last-yr{background:#64B5F6}
+  .yoy-bar-fill.two-yr{background:#BBDEFB;color:var(--ink2)}
+  .yoy-nights-label{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;min-width:32px;text-align:right}
+  .yoy-delta{font-size:11px;font-weight:700;min-width:36px;text-align:right}
+  .yoy-delta.up{color:var(--green)}.yoy-delta.down{color:var(--red)}.yoy-delta.flat{color:var(--grey3)}
+  .yoy-legend{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  .yoy-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2);font-weight:500}
+  .yoy-swatch{width:14px;height:10px;border-radius:3px;flex-shrink:0}
+  .yoy-type-toggle{display:flex;background:var(--grey2);border-radius:8px;padding:3px;margin-bottom:14px}
+  .yoy-type-toggle button{flex:1;padding:7px;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:none;color:var(--ink2);transition:all 0.2s}
+  .yoy-type-toggle button.active{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+  .yoy-no-data{text-align:center;padding:32px 16px;color:var(--ink2);font-size:13px}
+  .yoy-period-toggle{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+
   /* ── GPS LOCATION CARD ─────────────────────── */
   .loc-card{border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow)}
   .loc-card-header{background:linear-gradient(135deg,#1565C0,#0277BD);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px}
@@ -277,6 +300,22 @@
   .loc-btn-confirm{flex:1;padding:12px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
   .loc-btn-override{padding:12px 16px;border:1.5px solid var(--grey2);border-radius:8px;background:#fff;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
   .loc-detecting{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--blue-lt);border-radius:14px;margin-bottom:12px;border:1.5px solid var(--blue-md);font-size:13px;color:var(--blue)}
+
+  /* ── COMMON DESTINATIONS ───────────────────── */
+  .dest-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:4px}
+  .dest-chip{display:flex;align-items:center;gap:7px;padding:9px 10px;border-radius:10px;
+    background:var(--grey);border:1.5px solid var(--grey2);cursor:pointer;transition:all 0.15s;
+    font-family:'DM Sans',sans-serif;text-align:left;width:100%}
+  .dest-chip:active{background:var(--blue-lt);border-color:var(--blue-md)}
+  .dest-flag{font-size:18px;flex-shrink:0}
+  .dest-info{flex:1;min-width:0}
+  .dest-city{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dest-sub{font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dest-nights{font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);font-weight:600;flex-shrink:0}
+  .dest-pin-btn{font-size:14px;flex-shrink:0;background:none;border:none;cursor:pointer;padding:0 2px;opacity:0.4;line-height:1}
+  .dest-chip.pinned{background:var(--yellow-lt);border-color:#FFE082}
+  .dest-chip.pinned .dest-pin-btn{opacity:1}
+  .dest-section-lbl{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink2);margin:10px 0 6px}
 
   /* ── MAP ───────────────────────────────────── */
   #map-container .leaflet-container{font-family:'DM Sans',sans-serif}
@@ -336,6 +375,7 @@
         <thead>
           <tr>
             <th>Date</th>
+            <th style="width:26px">'YY</th>
             <th style="width:30px">Day</th>
             <th>City</th>
             <th>Country</th>
@@ -375,11 +415,14 @@
 
       <label class="form-label">Date</label>
       <input type="date" class="form-input" id="single-date">
-      <label class="form-label">City Search <span style="font-size:10px;color:var(--ink2);font-weight:400;text-transform:none;letter-spacing:0">(or use GPS above)</span></label>
+
+      <!-- Common Destinations -->
+      <div id="common-dest-single"></div>
+
+      <label class="form-label">Search for another city</label>
       <input type="text" class="form-input" id="city-search" placeholder="Type any city…" oninput="onCitySearch(this.value,'single')" autocomplete="off">
       <div id="search-results-single"></div>
-      <!-- Favourites -->
-      <div class="favs-section" id="favs-single"></div>
+      <div id="favs-single" style="display:none"></div>
       <div id="selected-city-single"></div>
       <button class="btn btn-primary" onclick="saveSingle()">Save Night</button>
     </div>
@@ -410,7 +453,8 @@
       <label class="form-label">City Search</label>
       <input type="text" class="form-input" id="city-search-range" placeholder="Type any city…" oninput="onCitySearch(this.value,'range')" autocomplete="off">
       <div id="search-results-range"></div>
-      <div class="favs-section" id="favs-range"></div>
+      <div id="common-dest-range"></div>
+      <div id="favs-range" style="display:none"></div>
       <div id="selected-city-range"></div>
       <button class="btn btn-primary" onclick="saveRange()">Save Range</button>
     </div>
@@ -436,6 +480,7 @@
       <button class="year-tab active" id="ytab-ytd" onclick="setStatYear('ytd')">Cal YTD</button>
       <button class="year-tab" id="ytab-feb" onclick="setStatYear('feb')">YE 28 Feb</button>
       <button class="year-tab" id="ytab-all" onclick="setStatYear('all')">All Time</button>
+      <button class="year-tab" id="ytab-yoy" onclick="setStatYear('yoy')">📊 Year vs Year</button>
     </div>
     <div id="stats-content"></div>
   </div>
@@ -556,10 +601,12 @@
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Favourites</div>
-    <p style="font-size:13px;color:var(--ink2);margin-bottom:10px">Star (☆) any search result to pin it as a quick-access favourite.</p>
+    <div class="card-title">Common Destinations</div>
+    <p style="font-size:13px;color:var(--ink2);margin-bottom:10px">
+      Your most-visited cities appear automatically in <b>+ Add</b> as quick-select buttons. Pin any city (⭐) to keep it there permanently, even if you haven't visited recently.
+    </p>
     <div id="favs-manage"></div>
-    <button class="btn" style="background:var(--red-lt);color:var(--red);margin-top:8px" onclick="clearFavs()">Clear All Favourites</button>
+    <button class="btn" style="background:var(--red-lt);color:var(--red);margin-top:8px;margin-bottom:0" onclick="clearFavs()">Unpin All</button>
   </div>
   <div class="card">
     <div class="card-title">About</div>
@@ -1143,6 +1190,7 @@ function renderHistory() {
         const dow=dowBadge(d);
         html+=`<tr class="gap-row">
           <td class="date-col">${fmtShort(d)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--grey3)">'${d.substring(2,4)}</td>
           <td>${dow}</td>
           <td colspan="3"><span class="gap-badge" onclick="prefillDate('${d}')">⚠ MISSING — tap to fill</span></td>
           <td class="del-col"></td>
@@ -1157,7 +1205,7 @@ function renderHistory() {
   }
 
   if (!displayed.length) {
-    tbody.innerHTML=`<tr><td colspan="6" class="empty-state" style="padding:28px;text-align:center;color:var(--ink2)">
+    tbody.innerHTML=`<tr><td colspan="7" class="empty-state" style="padding:28px;text-align:center;color:var(--ink2)">
       ${histFilter?'No matching entries':'No entries yet — tap + Add to start'}</td></tr>`;
     document.getElementById('hist-count').textContent='';
     return;
@@ -1181,6 +1229,7 @@ function renderHistory() {
           if (gapSet.has(gd)) {
             html+=`<tr class="gap-row">
               <td class="date-col">${fmtShort(gd)}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--grey3)">'${gd.substring(2,4)}</td>
               <td>${dowBadge(gd)}</td>
               <td colspan="3"><span class="gap-badge" onclick="prefillDate('${gd}')">⚠ MISSING — tap to fill</span></td>
               <td class="del-col"></td>
@@ -1198,6 +1247,7 @@ function renderHistory() {
           if (gapSet.has(gd)) {
             html+=`<tr class="gap-row">
               <td class="date-col">${fmtShort(gd)}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--grey3)">'${gd.substring(2,4)}</td>
               <td>${dowBadge(gd)}</td>
               <td colspan="3"><span class="gap-badge" onclick="prefillDate('${gd}')">⚠ MISSING — tap to fill</span></td>
               <td class="del-col"></td>
@@ -1213,8 +1263,10 @@ function renderHistory() {
     const cityTxt   = isTransit ? (e.route||'In Transit') : e.city;
     const countryTxt= isTransit ? '✈ Transit' : e.country;
     const flagTxt   = e.flag||'';
+    const yr2       = e.date.substring(2,4);
     html+=`<tr class="${rowClass}">
       <td class="date-col">${fmtShort(e.date)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink2);white-space:nowrap">'${yr2}</td>
       <td>${dowBadge(e.date)}</td>
       <td class="city-col">${flagTxt} ${cityTxt}</td>
       <td class="country-col">${countryTxt}</td>
@@ -1260,7 +1312,7 @@ function showScreen(id) {
   if(id==='stats')    renderStats();
   if(id==='log')     { renderHistory(); renderTodayStatus(); }
   if(id==='settings')  renderFavsManage();
-  if(id==='add')     { renderFavChips('single'); renderFavChips('range'); renderGPSCard(); }
+  if(id==='add')     { renderCommonDests('single'); renderCommonDests('range'); renderGPSCard(); }
   if(id==='export')    checkBackupReminder();
   if(id==='map')       renderMap();
 }
@@ -1271,46 +1323,116 @@ function setMode(m) {
     document.getElementById(x+'-mode').style.display=x===m?'block':'none';
     document.getElementById('mode-'+x).classList.toggle('active',x===m);
   });
-  if(m!=='travel') renderFavChips(m);
+  if(m!=='travel') { renderCommonDests(m); }
 }
 
 // ═══════════════════════════════════════════════════════
-//  FAVOURITES
+//  COMMON DESTINATIONS
 // ═══════════════════════════════════════════════════════
 function isFav(city) { return favourites.some(f=>f.city===city.city&&f.country===city.country); }
+
 function toggleFav(city) {
   if(isFav(city)) favourites=favourites.filter(f=>!(f.city===city.city&&f.country===city.country));
-  else favourites=[...favourites,city];
+  else favourites=[...favourites, {city:city.city, country:city.country, countryCode:city.countryCode, flag:city.flag}];
   localStorage.setItem('dc_favs',JSON.stringify(favourites));
-  renderFavChips('single'); renderFavChips('range'); renderFavsManage();
+  renderCommonDests('single'); renderCommonDests('range'); renderFavsManage();
 }
+
+function getTopCities(n) {
+  // Build night counts per city from all entries
+  const counts = {};
+  entries.filter(e=>e.type!=='transit').forEach(e=>{
+    const k = e.city+'|'+e.country;
+    if (!counts[k]) counts[k] = {city:e.city, country:e.country, flag:e.flag, countryCode:e.countryCode||'', nights:0};
+    counts[k].nights++;
+  });
+  return Object.values(counts).sort((a,b)=>b.nights-a.nights).slice(0,n);
+}
+
+function renderCommonDests(mode) {
+  const el = document.getElementById('common-dest-'+mode);
+  if (!el) return;
+
+  const pinned  = favourites;                    // manually pinned
+  const top     = getTopCities(8);               // top by history
+  // Merge: pinned first, then top cities not already pinned
+  const pinnedKeys = new Set(pinned.map(f=>f.city+'|'+f.country));
+  const suggestions = top.filter(c => !pinnedKeys.has(c.city+'|'+c.country)).slice(0, 6-Math.min(pinned.length,6));
+
+  const all = [
+    ...pinned.map(f => ({...f, isPinned:true, nights: top.find(t=>t.city===f.city&&t.country===f.country)?.nights||0})),
+    ...suggestions.map(c => ({...c, isPinned:false}))
+  ];
+
+  if (!all.length) { el.innerHTML = ''; return; }
+
+  let html = '<div style="margin-bottom:12px">';
+  if (pinned.length > 0) {
+    html += '<div class="dest-section-lbl">⭐ Pinned</div><div class="dest-grid">';
+    pinned.forEach(f => {
+      const nights = top.find(t=>t.city===f.city&&t.country===f.country)?.nights||0;
+      html += destChipHTML(f, nights, true, mode);
+    });
+    html += '</div>';
+  }
+  if (suggestions.length > 0) {
+    html += '<div class="dest-section-lbl">' + (pinned.length?'🕐 Recent & frequent':'🕐 Frequent destinations') + '</div><div class="dest-grid">';
+    suggestions.forEach(c => {
+      html += destChipHTML(c, c.nights, false, mode);
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function destChipHTML(city, nights, pinned, mode) {
+  const safeCity = JSON.stringify({city:city.city,country:city.country,countryCode:city.countryCode||'',flag:city.flag});
+  return `<button class="dest-chip${pinned?' pinned':''}" onclick='selectCity(${safeCity},"${mode}")'>
+    <span class="dest-flag">${city.flag||'🌍'}</span>
+    <div class="dest-info">
+      <div class="dest-city">${city.city}</div>
+      <div class="dest-sub">${city.country}</div>
+    </div>
+    ${nights > 0 ? `<span class="dest-nights">${nights}n</span>` : ''}
+    <button class="dest-pin-btn" onclick='event.stopPropagation();toggleFav(${safeCity})' title="${pinned?'Unpin':'Pin'}">${pinned?'⭐':'☆'}</button>
+  </button>`;
+}
+
 function renderFavChips(mode) {
-  const el=document.getElementById('favs-'+mode);
-  if(!el) return;
-  if(!favourites.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="favs-label">⭐ Quick Select</div>
-    <div class="favs-chips">${favourites.map(f=>
-      `<div class="fav-chip" onclick='selectCity(${JSON.stringify(f)},"${mode}")'>${f.flag} ${f.city}</div>`
-    ).join('')}</div>`;
+  // kept for compatibility but no longer renders visible UI (common-dest replaces it)
 }
+
 function renderFavsManage() {
-  const el=document.getElementById('favs-manage');
-  if(!el) return;
-  if(!favourites.length){el.innerHTML=`<p style="font-size:13px;color:var(--ink2)">No favourites yet.</p>`;return;}
-  el.innerHTML=`<div class="favs-chips">${favourites.map((f,i)=>
-    `<div class="fav-chip" style="padding-right:6px">${f.flag} ${f.city}
-      <span onclick="removeFavByIndex(${i})" style="margin-left:4px;color:#999;cursor:pointer;font-size:14px">×</span>
-    </div>`).join('')}</div>`;
+  const el = document.getElementById('favs-manage');
+  if (!el) return;
+  if (!favourites.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--ink2)">No pinned destinations yet — star any city when adding an entry to pin it here.</p>';
+    return;
+  }
+  el.innerHTML = '<div class="dest-grid">' +
+    favourites.map((f,i) =>
+      `<div class="dest-chip pinned" style="cursor:default">
+        <span class="dest-flag">${f.flag||'🌍'}</span>
+        <div class="dest-info"><div class="dest-city">${f.city}</div><div class="dest-sub">${f.country}</div></div>
+        <button class="dest-pin-btn" onclick="removeFavByIndex(${i})" title="Unpin" style="opacity:0.7;font-size:16px">×</button>
+      </div>`
+    ).join('') +
+  '</div>';
 }
-function removeFavByIndex(i){
+
+function removeFavByIndex(i) {
   favourites.splice(i,1);
   localStorage.setItem('dc_favs',JSON.stringify(favourites));
-  renderFavsManage(); renderFavChips('single'); renderFavChips('range');
+  renderFavsManage(); renderCommonDests('single'); renderCommonDests('range');
 }
-function clearFavs(){
-  if(confirm('Clear all favourites?')){
-    favourites=[];localStorage.setItem('dc_favs','[]');
-    renderFavsManage();renderFavChips('single');renderFavChips('range');showToast('Favourites cleared');
+
+function clearFavs() {
+  if (confirm('Unpin all destinations?')) {
+    favourites=[];
+    localStorage.setItem('dc_favs','[]');
+    renderFavsManage(); renderCommonDests('single'); renderCommonDests('range');
+    showToast('All pins cleared');
   }
 }
 
@@ -1540,7 +1662,7 @@ function renderResults(results, mode, interim) {
         <div class="city-name">${r.city}</div>
         <div class="country-name">${r.country}</div>
       </div>
-      <button class="fav-star ${fav?'active':''}" onclick='toggleFav(${JSON.stringify(r)})' title="${fav?'Remove favourite':'Add to favourites'}">${fav?'⭐':'☆'}</button>
+      <button class="fav-star ${fav?'active':''}" onclick='event.stopPropagation();toggleFav(${JSON.stringify(r)})' title="${fav?'Unpin':'Pin to common destinations'}">${fav?'⭐':'☆'}</button>
     </div>`;
   }).join('')}</div>${interim?'<div style="padding:6px 14px;font-size:11px;color:var(--ink2)">Refining with AI…</div>':''}`;
 }
@@ -1618,29 +1740,32 @@ function renderRangeCalendar() {
 
   let calHTML = '';
   months.forEach(({year, month}) => {
-    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
-    const daysInMonth = new Date(year, month+1, 0).getDate();
-    const monthLabel = new Date(year, month, 1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+    // Use local time throughout — avoid UTC midnight shifting
+    const firstOfMonth = new Date(year, month, 1);
+    const firstDay     = firstOfMonth.getDay(); // 0=Sun — local time, safe
+    const daysInMonth  = new Date(year, month+1, 0).getDate();
+    const monthLabel   = firstOfMonth.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
 
     calHTML += `<div style="padding:0">`;
     if (months.length > 1) {
       calHTML += `<div style="background:var(--grey);padding:5px 10px;font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:0.5px">${monthLabel}</div>`;
     }
     calHTML += `<div class="range-cal">`;
-    // Day headers
     DAYS.forEach(d => { calHTML += `<div class="range-cal-dow">${d}</div>`; });
-    // Empty cells before first day
     for (let i=0; i<firstDay; i++) calHTML += `<div class="range-cal-day empty"></div>`;
-    // Day cells
     for (let d=1; d<=daysInMonth; d++) {
-      const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const dow = new Date(ds+'T12:00:00').getDay();
-      const isStart   = ds===from;
-      const isEnd     = to && ds===to;
-      const inRange   = from && to && ds>from && ds<to;
-      const isToday   = ds===today;
-      const hasEntry  = entryDates.has(ds);
-      const isWeekend = dow===0||dow===6;
+      // Build YYYY-MM-DD using local parts — no UTC conversion
+      const mm = String(month+1).padStart(2,'0');
+      const dd = String(d).padStart(2,'0');
+      const ds = `${year}-${mm}-${dd}`;
+      // Day-of-week from local date object — avoids UTC shift
+      const dow        = new Date(year, month, d).getDay();
+      const isStart    = ds === from;
+      const isEnd      = to && ds === to;
+      const inRange    = from && to && ds > from && ds < to;
+      const isToday    = ds === today;
+      const hasEntry   = entryDates.has(ds);
+      const isWeekend  = dow === 0 || dow === 6;
       let cls = 'range-cal-day';
       if (isStart)  cls += ' range-start';
       if (isEnd)    cls += ' range-end';
@@ -1740,7 +1865,7 @@ function persist() {
 // ═══════════════════════════════════════════════════════
 function setStatYear(y) {
   statYear=y;
-  ['ytd','feb','all'].forEach(x=>document.getElementById('ytab-'+x).classList.toggle('active',x===y));
+  ['ytd','feb','all','yoy'].forEach(x=>document.getElementById('ytab-'+x).classList.toggle('active',x===y));
   renderStats();
 }
 function calcStats(from,to) {
@@ -1765,6 +1890,12 @@ function getRange(mode) {
   return {from:'2000-01-01',to:'2099-12-31'};
 }
 function renderStats() {
+  if (statYear === 'yoy') {
+    // Hide summary tiles for YoY view — it has its own header
+    document.getElementById('summary-grid').innerHTML = '';
+    renderYoY();
+    return;
+  }
   const {from,to}=getRange();
   const {total,transit,byCo,byCity}=calcStats(from,to);
   const cntN=total-transit, nCo=Object.keys(byCo).length;
@@ -1810,6 +1941,173 @@ function renderStats() {
     });
   }
   document.getElementById('stats-content').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  YEAR-OVER-YEAR COMPARISON
+// ═══════════════════════════════════════════════════════
+let yoyMode   = 'cal';   // 'cal' = calendar year, 'tax' = tax year (Mar-Feb)
+let yoyYears  = 3;       // number of years to show
+
+function renderYoY() {
+  const today = new Date(todayStr()+'T12:00:00');
+  const curYr = today.getFullYear();
+
+  // Build year list (this year + 2 prior)
+  const years = [];
+  for (let i = 0; i < yoyYears; i++) years.push(curYr - i);
+  years.reverse(); // oldest first for chart
+
+  // Get date range for each year based on mode
+  function getYearRange(yr) {
+    if (yoyMode === 'cal') return { from:`${yr}-01-01`, to:`${yr}-12-31`, label: String(yr) };
+    // Tax year: 1 Mar (yr-1) → 28/29 Feb yr
+    return { from:`${yr-1}-03-01`, to:febEnd(yr), label:`Mar ${yr-1}–Feb ${yr}` };
+  }
+
+  // Compute stats per year
+  const yearStats = years.map(yr => {
+    const r = getYearRange(yr);
+    const s = calcStats(r.from, r.to);
+    return { yr, label: r.label, ...s, range: r };
+  });
+
+  // Collect all countries that appear in any year
+  const allCountries = new Set();
+  yearStats.forEach(ys => Object.keys(ys.byCo).forEach(c => allCountries.add(c)));
+
+  // Get flag for each country (from any year's data)
+  const flagMap = {};
+  yearStats.forEach(ys => Object.entries(ys.byCo).forEach(([co,d]) => { if (!flagMap[co]) flagMap[co] = d.flag; }));
+
+  // Sort countries by total nights across all years (desc)
+  const sortedCountries = [...allCountries].sort((a,b) => {
+    const ta = yearStats.reduce((s,ys)=>s+(ys.byCo[a]?.nights||0),0);
+    const tb = yearStats.reduce((s,ys)=>s+(ys.byCo[b]?.nights||0),0);
+    return tb - ta;
+  });
+
+  // Max nights for bar scaling (across all countries + years)
+  const maxNights = Math.max(1, ...yearStats.flatMap(ys => Object.values(ys.byCo).map(d=>d.nights)));
+
+  // Year colours: current year = blue, last = lighter, two ago = lightest
+  const colours = ['#BBDEFB','#64B5F6','#1565C0']; // oldest → newest
+  const textCols= ['#455A64','#1565C0','#fff'];
+  const barClasses = ['two-yr','last-yr','this-yr'];
+
+  // Total nights per year (for summary)
+  let html = '';
+
+  // Period type toggle
+  html += `<div class="yoy-type-toggle">
+    <button class="${yoyMode==='cal'?'active':''}" onclick="setYoYMode('cal')">📅 Calendar Year</button>
+    <button class="${yoyMode==='tax'?'active':''}" onclick="setYoYMode('tax')">📆 Tax Year (Feb)</button>
+  </div>`;
+
+  // Legend
+  html += `<div class="yoy-legend">`;
+  years.forEach((yr, i) => {
+    html += `<div class="yoy-legend-item">
+      <div class="yoy-swatch" style="background:${colours[i]}"></div>
+      <span>${yearStats[i].label}</span>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Summary totals row
+  html += `<div style="background:var(--grey);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink2);margin-bottom:8px">Total Nights</div>
+    <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;height:32px">`;
+  const totalAll = yearStats.reduce((s,ys)=>s+ys.total,1);
+  yearStats.forEach((ys,i) => {
+    const pct = Math.round(ys.total / Math.max(1,yearStats.reduce((s,y2)=>Math.max(s,y2.total),1)) * 100);
+    html += `<div style="flex:${ys.total||0.5};background:${colours[i]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${textCols[i]};min-width:0;overflow:hidden;white-space:nowrap;padding:0 6px" title="${ys.label}: ${ys.total} nights">
+      ${ys.total > 0 ? ys.total+'n' : '–'}
+    </div>`;
+  });
+  html += `</div>
+    <div style="display:flex;gap:0;margin-top:3px">`;
+  yearStats.forEach((ys,i)=>{
+    html+=`<div style="flex:${ys.total||0.5};text-align:center;font-size:10px;color:var(--ink2);overflow:hidden">${ys.label}</div>`;
+  });
+  html += `</div></div>`;
+
+  // Per-country comparison
+  if (sortedCountries.size === 0 || sortedCountries.length === 0) {
+    html += `<div class="yoy-no-data">No data yet — add entries to see year-over-year comparison</div>`;
+    document.getElementById('stats-content').innerHTML = html;
+    return;
+  }
+
+  html += `<div class="section-header">Country Comparison</div>`;
+
+  sortedCountries.forEach(co => {
+    const yearNights = yearStats.map(ys => ys.byCo[co]?.nights || 0);
+    if (yearNights.every(n=>n===0)) return;
+
+    const curNights  = yearNights[yearNights.length - 1];
+    const prevNights = yearNights[yearNights.length - 2];
+    const delta      = curNights - prevNights;
+    const deltaClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+    const deltaStr   = delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : '=';
+    const flag       = flagMap[co] || '';
+
+    html += `<div class="yoy-country-block">
+      <div class="yoy-country-header">
+        <span style="font-size:20px">${flag}</span>
+        <span>${co}</span>
+        <span class="yoy-delta ${deltaClass}" style="margin-left:auto;font-size:13px">${prevNights > 0 || curNights > 0 ? deltaStr+'n' : ''}</span>
+      </div>
+      <div class="yoy-bars">`;
+
+    yearStats.forEach((ys, i) => {
+      const n   = ys.byCo[co]?.nights || 0;
+      const pct = n > 0 ? Math.round(n / maxNights * 100) : 0;
+      const tot = ys.total > 0 ? Math.round(n / ys.total * 100) : 0;
+      html += `<div class="yoy-bar-row">
+        <span class="yoy-year-label">${ys.label}</span>
+        <div class="yoy-bar-track">
+          <div class="yoy-bar-fill ${barClasses[i]}" style="width:${pct}%">
+            ${pct > 12 ? n+'n' : ''}
+          </div>
+        </div>
+        <span class="yoy-nights-label" style="color:${colours[i]}">${n > 0 ? n : '–'}</span>
+        <span style="font-size:10px;color:var(--ink2);min-width:30px;text-align:right">${n>0?tot+'%':''}</span>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  // Transit nights comparison
+  const anyTransit = yearStats.some(ys => ys.transit > 0);
+  if (anyTransit) {
+    html += `<div class="yoy-country-block">
+      <div class="yoy-country-header"><span style="font-size:20px">✈</span><span>Transit Nights</span></div>
+      <div class="yoy-bars">`;
+    yearStats.forEach((ys,i) => {
+      const n = ys.transit;
+      const pct = n > 0 ? Math.round(n/maxNights*100) : 0;
+      html += `<div class="yoy-bar-row">
+        <span class="yoy-year-label">${ys.label}</span>
+        <div class="yoy-bar-track">
+          <div class="yoy-bar-fill ${barClasses[i]}" style="width:${pct}%;background:${n>0?'#F9A825':'transparent'};color:#7B6000">
+            ${pct>12?n+'n':''}
+          </div>
+        </div>
+        <span class="yoy-nights-label" style="color:#F9A825">${n>0?n:'–'}</span>
+        <span style="font-size:10px;color:var(--ink2);min-width:30px"></span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  document.getElementById('stats-content').innerHTML = html;
+}
+
+function setYoYMode(m) {
+  yoyMode = m;
+  renderYoY();
 }
 
 // ═══════════════════════════════════════════════════════
