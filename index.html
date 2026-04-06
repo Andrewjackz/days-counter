@@ -20,38 +20,38 @@
     --radius:14px;--shadow:0 2px 12px rgba(21,101,192,0.10);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:'DM Sans',sans-serif;background:var(--grey);color:var(--ink);min-height:100vh;padding-bottom:110px}
+  body{font-family:'DM Sans',sans-serif;background:var(--grey);color:var(--ink);min-height:100vh;padding-bottom:90px}
 
   /* ── HEADER / TABS ─────────────────────────── */
-  .header{background:var(--blue);color:#fff;padding:52px 20px 20px;text-align:center}
-  .header h1{font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-0.5px}
-  .header p{font-size:13px;opacity:0.8;margin-top:4px}
-  .tabs{display:flex;background:var(--blue);padding:0 6px;gap:3px}
-  .tab{flex:1;padding:9px 2px;border:none;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.75);
-    font-family:'DM Sans',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:0.2px;
+  .header{background:var(--blue);color:#fff;padding:44px 16px 14px;text-align:center}
+  .header h1{font-family:'DM Serif Display',serif;font-size:24px;letter-spacing:-0.5px}
+  .header p{font-size:12px;opacity:0.75;margin-top:3px}
+  .tabs{display:flex;background:var(--blue);padding:0 4px;gap:2px}
+  .tab{flex:1;padding:8px 2px;border:none;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.75);
+    font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2px;
     text-transform:uppercase;border-radius:8px 8px 0 0;cursor:pointer;transition:all 0.2s}
   .tab.active{background:var(--grey);color:var(--blue)}
 
   /* ── SCREENS / CARDS ───────────────────────── */
-  .screen{display:none;padding:14px}.screen.active{display:block}
-  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
-  .card-title{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);margin-bottom:12px}
+  .screen{display:none;padding:10px}.screen.active{display:block}
+  .card{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:13px;margin-bottom:10px}
+  .card-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);margin-bottom:10px}
 
   /* ── HISTORY TABLE ─────────────────────────── */
-  .history-wrap{overflow-y:auto;max-height:calc(100vh - 260px);border-radius:10px;border:1.5px solid var(--grey2)}
-  .hist-table{width:100%;border-collapse:collapse;font-size:13px}
-  .hist-table thead th{position:sticky;top:0;background:var(--blue);color:#fff;padding:9px 10px;
-    text-align:left;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;z-index:2}
-  .hist-table thead th:last-child{text-align:center;width:38px}
+  .history-wrap{overflow-y:auto;max-height:calc(100vh - 240px);border-radius:10px;border:1.5px solid var(--grey2)}
+  .hist-table{width:100%;border-collapse:collapse;font-size:12px}
+  .hist-table thead th{position:sticky;top:0;background:var(--blue);color:#fff;padding:7px 8px;
+    text-align:left;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;z-index:2}
+  .hist-table thead th:last-child{text-align:center;width:32px}
   .hist-table tbody tr{border-bottom:1px solid var(--grey2);transition:background 0.1s}
   .hist-table tbody tr:last-child{border-bottom:none}
   .hist-table tbody tr:hover{background:var(--blue-lt)}
-  .hist-table td{padding:9px 10px;vertical-align:middle}
-  .hist-table td.date-col{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink2);white-space:nowrap}
-  .hist-table td.city-col{font-weight:600;font-size:13px}
-  .hist-table td.country-col{font-size:12px;color:var(--ink2)}
+  .hist-table td{padding:7px 8px;vertical-align:middle}
+  .hist-table td.date-col{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink2);white-space:nowrap}
+  .hist-table td.city-col{font-weight:600;font-size:12px}
+  .hist-table td.country-col{font-size:11px;color:var(--ink2)}
   .hist-table td.del-col{text-align:center}
-  .del-btn{background:none;border:none;color:var(--grey3);font-size:16px;cursor:pointer;padding:2px 4px;border-radius:4px;line-height:1}
+  .del-btn{background:none;border:none;color:var(--grey3);font-size:15px;cursor:pointer;padding:2px 3px;border-radius:4px;line-height:1}
   .del-btn:active{color:var(--red)}
 
   /* gap row */
@@ -68,10 +68,10 @@
   .transit-row td.city-col{color:#7B6000;font-weight:500}
 
   /* ── ENTRY FORM ────────────────────────────── */
-  .form-label{font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink2);margin-bottom:5px;display:block}
-  .form-input{width:100%;padding:11px 14px;border:1.5px solid var(--grey2);border-radius:10px;
+  .form-label{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink2);margin-bottom:4px;display:block}
+  .form-input{width:100%;padding:10px 12px;border:1.5px solid var(--grey2);border-radius:10px;
     font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink);background:#fff;
-    margin-bottom:12px;outline:none;transition:border-color 0.2s}
+    margin-bottom:10px;outline:none;transition:border-color 0.2s}
   .form-input:focus{border-color:var(--blue)}
 
   /* ── SEARCH / FAVOURITES ───────────────────── */
@@ -94,8 +94,8 @@
   .fav-chip:active{background:#FFE082}
 
   /* ── BUTTONS ───────────────────────────────── */
-  .btn{width:100%;padding:14px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;
-    font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-bottom:8px}
+  .btn{width:100%;padding:12px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;
+    font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-bottom:7px}
   .btn-primary{background:var(--blue);color:#fff}.btn-primary:active{background:#0d47a1}
   .btn-travel{background:var(--yellow);color:#4A3900}
   .btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
@@ -107,20 +107,20 @@
   .toggle-type button.active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,0.1)}
 
   /* ── STATS ─────────────────────────────────── */
-  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-  .summary-tile{background:var(--grey);border-radius:10px;padding:12px;text-align:center}
-  .summary-tile .big{font-family:'DM Serif Display',serif;font-size:36px;color:var(--blue);line-height:1}
-  .summary-tile .lbl{font-size:11px;color:var(--ink2);margin-top:4px;font-weight:500}
-  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--grey2)}
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .summary-tile{background:var(--grey);border-radius:10px;padding:10px;text-align:center}
+  .summary-tile .big{font-family:'DM Serif Display',serif;font-size:30px;color:var(--blue);line-height:1}
+  .summary-tile .lbl{font-size:10px;color:var(--ink2);margin-top:3px;font-weight:600}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--grey2)}
   .stat-row:last-child{border-bottom:none}
-  .stat-label{display:flex;align-items:center;gap:8px;font-size:14px;max-width:155px;overflow:hidden}
-  .stat-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;min-width:36px;text-align:right}
-  .bar-bg{height:6px;background:var(--grey2);border-radius:3px;width:70px;overflow:hidden}
+  .stat-label{display:flex;align-items:center;gap:6px;font-size:13px;max-width:150px;overflow:hidden}
+  .stat-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;min-width:34px;text-align:right}
+  .bar-bg{height:5px;background:var(--grey2);border-radius:3px;width:65px;overflow:hidden}
   .bar-fill{height:100%;border-radius:3px}
-  .pct-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink2);min-width:36px;text-align:right}
-  .year-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-  .year-tab{padding:6px 12px;border-radius:20px;border:1.5px solid var(--grey2);background:#fff;
-    font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+  .pct-badge{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink2);min-width:32px;text-align:right}
+  .year-tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+  .year-tab{padding:5px 10px;border-radius:20px;border:1.5px solid var(--grey2);background:#fff;
+    font-size:11px;font-weight:600;color:var(--ink2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
   .year-tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 
   /* ── MISC ──────────────────────────────────── */
@@ -1946,95 +1946,113 @@ function renderStats() {
 // ═══════════════════════════════════════════════════════
 //  YEAR-OVER-YEAR COMPARISON
 // ═══════════════════════════════════════════════════════
-let yoyMode   = 'cal';   // 'cal' = calendar year, 'tax' = tax year (Mar-Feb)
-let yoyYears  = 3;       // number of years to show
+let yoyMode  = 'cal';
+let yoyYears = 3;
+
+function setYoYMode(m) { yoyMode = m; renderYoY(); }
+function setYoYYears(n) { yoyYears = parseInt(n); document.getElementById('yoy-years-val').textContent = n+' yr'+(n>1?'s':''); renderYoY(); }
 
 function renderYoY() {
-  const today = new Date(todayStr()+'T12:00:00');
-  const curYr = today.getFullYear();
+  const today  = todayStr();
+  const curYr  = new Date(today+'T12:00:00').getFullYear();
 
-  // Build year list (this year + 2 prior)
+  // Build year list oldest→newest
   const years = [];
-  for (let i = 0; i < yoyYears; i++) years.push(curYr - i);
-  years.reverse(); // oldest first for chart
+  for (let i = yoyYears-1; i >= 0; i--) years.push(curYr - i);
 
-  // Get date range for each year based on mode
+  // Date range per year — cap current year at today, not 31 Dec
   function getYearRange(yr) {
-    if (yoyMode === 'cal') return { from:`${yr}-01-01`, to:`${yr}-12-31`, label: String(yr) };
-    // Tax year: 1 Mar (yr-1) → 28/29 Feb yr
-    return { from:`${yr-1}-03-01`, to:febEnd(yr), label:`Mar ${yr-1}–Feb ${yr}` };
+    if (yoyMode === 'cal') {
+      const to = yr === curYr ? today : `${yr}-12-31`;
+      return { from:`${yr}-01-01`, to, label: String(yr) };
+    }
+    // Tax year: 1 Mar (yr-1) → 28/29 Feb yr; cap current
+    const to = yr === curYr ? today : febEnd(yr);
+    const from = `${yr-1}-03-01`;
+    return { from, to, label:`${yr-1}–${String(yr).slice(2)}` };
   }
 
-  // Compute stats per year
   const yearStats = years.map(yr => {
     const r = getYearRange(yr);
     const s = calcStats(r.from, r.to);
-    return { yr, label: r.label, ...s, range: r };
+    // Also compute annualised total — how many days in the period vs 365
+    const periodDays = Math.max(1, Math.round((new Date(r.to+'T12:00:00') - new Date(r.from+'T12:00:00'))/86400000)+1);
+    return { yr, label: r.label, periodDays, ...s, range: r };
   });
 
-  // Collect all countries that appear in any year
+  // Collect countries, flags, sort by total
   const allCountries = new Set();
-  yearStats.forEach(ys => Object.keys(ys.byCo).forEach(c => allCountries.add(c)));
-
-  // Get flag for each country (from any year's data)
   const flagMap = {};
-  yearStats.forEach(ys => Object.entries(ys.byCo).forEach(([co,d]) => { if (!flagMap[co]) flagMap[co] = d.flag; }));
-
-  // Sort countries by total nights across all years (desc)
+  yearStats.forEach(ys => Object.entries(ys.byCo).forEach(([co,d]) => {
+    allCountries.add(co);
+    if (!flagMap[co]) flagMap[co] = d.flag;
+  }));
   const sortedCountries = [...allCountries].sort((a,b) => {
     const ta = yearStats.reduce((s,ys)=>s+(ys.byCo[a]?.nights||0),0);
     const tb = yearStats.reduce((s,ys)=>s+(ys.byCo[b]?.nights||0),0);
-    return tb - ta;
+    return tb-ta;
   });
 
-  // Max nights for bar scaling (across all countries + years)
+  // Dynamic colour palette — always 5 colours, slice to yoyYears
+  const palette = ['#BBDEFB','#90CAF9','#64B5F6','#1E88E5','#0D47A1'];
+  const txtPal  = ['#1565C0','#1565C0','#1565C0','#fff','#fff'];
+  const colours = palette.slice(palette.length - yoyYears);
+  const txtCols = txtPal.slice(txtPal.length - yoyYears);
+
+  // Max nights across all countries × all years for scaling
   const maxNights = Math.max(1, ...yearStats.flatMap(ys => Object.values(ys.byCo).map(d=>d.nights)));
 
-  // Year colours: current year = blue, last = lighter, two ago = lightest
-  const colours = ['#BBDEFB','#64B5F6','#1565C0']; // oldest → newest
-  const textCols= ['#455A64','#1565C0','#fff'];
-  const barClasses = ['two-yr','last-yr','this-yr'];
-
-  // Total nights per year (for summary)
   let html = '';
 
-  // Period type toggle
+  // Period toggle
   html += `<div class="yoy-type-toggle">
     <button class="${yoyMode==='cal'?'active':''}" onclick="setYoYMode('cal')">📅 Calendar Year</button>
     <button class="${yoyMode==='tax'?'active':''}" onclick="setYoYMode('tax')">📆 Tax Year (Feb)</button>
   </div>`;
 
+  // Year slider
+  html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:var(--grey);border-radius:10px;padding:10px 14px">
+    <span style="font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap">Years shown:</span>
+    <input type="range" min="2" max="5" value="${yoyYears}" step="1"
+      style="flex:1;accent-color:var(--blue)"
+      oninput="setYoYYears(this.value)">
+    <span id="yoy-years-val" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--blue);min-width:28px">${yoyYears}yr${yoyYears>1?'s':''}</span>
+  </div>`;
+
   // Legend
   html += `<div class="yoy-legend">`;
   years.forEach((yr, i) => {
+    const isCurrentYTD = yr === curYr;
     html += `<div class="yoy-legend-item">
       <div class="yoy-swatch" style="background:${colours[i]}"></div>
-      <span>${yearStats[i].label}</span>
+      <span>${yearStats[i].label}${isCurrentYTD?' <span style="font-size:9px;color:var(--ink2)">(YTD)</span>':''}</span>
     </div>`;
   });
   html += `</div>`;
 
-  // Summary totals row
+  // Total nights summary bar
+  const maxTotal = Math.max(1, ...yearStats.map(ys=>ys.total));
   html += `<div style="background:var(--grey);border-radius:10px;padding:12px 14px;margin-bottom:16px">
     <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink2);margin-bottom:8px">Total Nights</div>
-    <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;height:32px">`;
-  const totalAll = yearStats.reduce((s,ys)=>s+ys.total,1);
+    <div style="display:flex;flex-direction:column;gap:4px">`;
   yearStats.forEach((ys,i) => {
-    const pct = Math.round(ys.total / Math.max(1,yearStats.reduce((s,y2)=>Math.max(s,y2.total),1)) * 100);
-    html += `<div style="flex:${ys.total||0.5};background:${colours[i]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${textCols[i]};min-width:0;overflow:hidden;white-space:nowrap;padding:0 6px" title="${ys.label}: ${ys.total} nights">
-      ${ys.total > 0 ? ys.total+'n' : '–'}
+    const barW = Math.round(ys.total / maxTotal * 100);
+    const isYTD = ys.yr === curYr;
+    html += `<div style="display:flex;align-items:center;gap:8px">
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ink2);min-width:52px;text-align:right">${ys.label}</span>
+      <div style="flex:1;background:var(--grey2);border-radius:6px;height:22px;overflow:hidden">
+        <div style="width:${barW}%;background:${colours[i]};height:100%;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:700;color:${txtCols[i]};transition:width 0.4s;white-space:nowrap">
+          ${barW > 10 ? ys.total+'n' : ''}
+        </div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${colours[i]};min-width:32px">${ys.total}</span>
+      ${isYTD ? '<span style="font-size:10px;color:var(--ink2)">YTD</span>' : ''}
     </div>`;
-  });
-  html += `</div>
-    <div style="display:flex;gap:0;margin-top:3px">`;
-  yearStats.forEach((ys,i)=>{
-    html+=`<div style="flex:${ys.total||0.5};text-align:center;font-size:10px;color:var(--ink2);overflow:hidden">${ys.label}</div>`;
   });
   html += `</div></div>`;
 
-  // Per-country comparison
-  if (sortedCountries.size === 0 || sortedCountries.length === 0) {
-    html += `<div class="yoy-no-data">No data yet — add entries to see year-over-year comparison</div>`;
+  if (!sortedCountries.length) {
+    html += `<div class="yoy-no-data">No data yet</div>`;
     document.getElementById('stats-content').innerHTML = html;
     return;
   }
@@ -2045,69 +2063,61 @@ function renderYoY() {
     const yearNights = yearStats.map(ys => ys.byCo[co]?.nights || 0);
     if (yearNights.every(n=>n===0)) return;
 
-    const curNights  = yearNights[yearNights.length - 1];
-    const prevNights = yearNights[yearNights.length - 2];
-    const delta      = curNights - prevNights;
-    const deltaClass = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
-    const deltaStr   = delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : '=';
-    const flag       = flagMap[co] || '';
+    const curN  = yearNights[yearNights.length-1];
+    const prevN = yearNights[yearNights.length-2];
+    const delta = curN - prevN;
+    const dCls  = delta>0?'up':delta<0?'down':'flat';
+    const dStr  = delta>0?'+'+delta:delta<0?String(delta):'=';
 
     html += `<div class="yoy-country-block">
       <div class="yoy-country-header">
-        <span style="font-size:20px">${flag}</span>
+        <span style="font-size:20px">${flagMap[co]||''}</span>
         <span>${co}</span>
-        <span class="yoy-delta ${deltaClass}" style="margin-left:auto;font-size:13px">${prevNights > 0 || curNights > 0 ? deltaStr+'n' : ''}</span>
+        <span class="yoy-delta ${dCls}" style="margin-left:auto;font-size:13px">${prevN>0||curN>0?dStr+'n':''}</span>
       </div>
       <div class="yoy-bars">`;
 
-    yearStats.forEach((ys, i) => {
+    yearStats.forEach((ys,i) => {
       const n   = ys.byCo[co]?.nights || 0;
-      const pct = n > 0 ? Math.round(n / maxNights * 100) : 0;
-      const tot = ys.total > 0 ? Math.round(n / ys.total * 100) : 0;
+      const barW = n > 0 ? Math.round(n/maxNights*100) : 0;
+      const pct  = ys.total > 0 ? Math.round(n/ys.total*100) : 0;
       html += `<div class="yoy-bar-row">
         <span class="yoy-year-label">${ys.label}</span>
         <div class="yoy-bar-track">
-          <div class="yoy-bar-fill ${barClasses[i]}" style="width:${pct}%">
-            ${pct > 12 ? n+'n' : ''}
+          <div class="yoy-bar-fill" style="width:${barW}%;background:${n>0?colours[i]:'transparent'};color:${txtCols[i]}">
+            ${barW > 12 ? n+'n' : ''}
           </div>
         </div>
-        <span class="yoy-nights-label" style="color:${colours[i]}">${n > 0 ? n : '–'}</span>
-        <span style="font-size:10px;color:var(--ink2);min-width:30px;text-align:right">${n>0?tot+'%':''}</span>
+        <span class="yoy-nights-label" style="color:${n>0?colours[i]:colours[i]};">${n > 0 ? n : '–'}</span>
+        <span style="font-size:10px;color:var(--ink2);min-width:32px;text-align:right">${n>0?pct+'%':''}</span>
       </div>`;
     });
-
     html += `</div></div>`;
   });
 
-  // Transit nights comparison
-  const anyTransit = yearStats.some(ys => ys.transit > 0);
-  if (anyTransit) {
+  // Transit
+  if (yearStats.some(ys=>ys.transit>0)) {
     html += `<div class="yoy-country-block">
       <div class="yoy-country-header"><span style="font-size:20px">✈</span><span>Transit Nights</span></div>
       <div class="yoy-bars">`;
     yearStats.forEach((ys,i) => {
       const n = ys.transit;
-      const pct = n > 0 ? Math.round(n/maxNights*100) : 0;
+      const barW = n > 0 ? Math.round(n/maxNights*100) : 0;
       html += `<div class="yoy-bar-row">
         <span class="yoy-year-label">${ys.label}</span>
         <div class="yoy-bar-track">
-          <div class="yoy-bar-fill ${barClasses[i]}" style="width:${pct}%;background:${n>0?'#F9A825':'transparent'};color:#7B6000">
-            ${pct>12?n+'n':''}
+          <div class="yoy-bar-fill" style="width:${barW}%;background:${n>0?'#F9A825':'transparent'};color:#4A3900">
+            ${barW>12?n+'n':''}
           </div>
         </div>
         <span class="yoy-nights-label" style="color:#F9A825">${n>0?n:'–'}</span>
-        <span style="font-size:10px;color:var(--ink2);min-width:30px"></span>
+        <span style="min-width:32px"></span>
       </div>`;
     });
     html += `</div></div>`;
   }
 
   document.getElementById('stats-content').innerHTML = html;
-}
-
-function setYoYMode(m) {
-  yoyMode = m;
-  renderYoY();
 }
 
 // ═══════════════════════════════════════════════════════
