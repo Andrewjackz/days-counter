@@ -301,7 +301,23 @@
   .loc-btn-override{padding:12px 16px;border:1.5px solid var(--grey2);border-radius:8px;background:#fff;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
   .loc-detecting{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--blue-lt);border-radius:14px;margin-bottom:12px;border:1.5px solid var(--blue-md);font-size:13px;color:var(--blue)}
 
-  /* ── COMMON DESTINATIONS ───────────────────── */
+  /* ── OVERWRITE WARNING MODAL ───────────────── */
+  .ow-overlay{position:fixed;inset:0;background:rgba(26,26,46,0.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+  .ow-box{background:#fff;border-radius:16px;max-width:340px;width:100%;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25)}
+  .ow-header{background:var(--orange);color:#fff;padding:14px 18px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .ow-body{padding:16px 18px}
+  .ow-body p{font-size:13px;color:var(--ink2);line-height:1.6;margin-bottom:12px}
+  .ow-conflicts{background:var(--orange-lt);border-radius:8px;padding:10px 12px;margin-bottom:14px;max-height:140px;overflow-y:auto}
+  .ow-conflict-row{font-size:12px;color:var(--orange);padding:2px 0;font-family:'DM Mono',monospace;display:flex;gap:8px}
+  .ow-conflict-row span{color:var(--ink2)}
+  .ow-btns{display:flex;gap:8px}
+  .ow-btn-proceed{flex:1;padding:11px;border:none;border-radius:8px;background:var(--orange);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+  .ow-btn-cancel{flex:1;padding:11px;border:1.5px solid var(--grey2);border-radius:8px;background:#fff;color:var(--ink2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+
+  /* ── MAP YEAR CHIPS ────────────────────────── */
+  .map-yr-chip{padding:4px 10px;border-radius:20px;border:1.5px solid var(--grey2);background:#fff;
+    font-size:11px;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;transition:all 0.15s}
+  .map-yr-chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
   .dest-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:4px}
   .dest-chip{display:flex;align-items:center;gap:7px;padding:9px 10px;border-radius:10px;
     background:var(--grey);border:1.5px solid var(--grey2);cursor:pointer;transition:all 0.15s;
@@ -496,6 +512,13 @@
     <button id="map-period-all" onclick="setMapPeriod('all')">🌍 All Time</button>
   </div>
 
+  <!-- Year navigation (hidden when All Time) -->
+  <div id="map-year-nav" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;background:#fff;border-radius:10px;border:1.5px solid var(--grey2);padding:6px 10px">
+    <button onclick="mapYearStep(-1)" style="background:var(--blue-lt);border:none;color:var(--blue);width:30px;height:30px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0">‹</button>
+    <div id="map-year-chips" style="display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch"></div>
+    <button onclick="mapYearStep(1)" style="background:var(--blue-lt);border:none;color:var(--blue);width:30px;height:30px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0">›</button>
+  </div>
+
   <!-- Stats chips -->
   <div id="map-stats-bar" class="map-stats-bar"></div>
 
@@ -506,7 +529,7 @@
   </div>
 
   <!-- Leaflet map -->
-  <div id="map-container" style="height:calc(100vh - 290px);min-height:280px;border-radius:12px;overflow:hidden;border:1.5px solid var(--grey2);z-index:0"></div>
+  <div id="map-container" style="height:calc(100vh - 330px);min-height:260px;border-radius:12px;overflow:hidden;border:1.5px solid var(--grey2);z-index:0"></div>
 
   <!-- Legend -->
   <div class="map-legend" style="margin-top:8px">
@@ -660,6 +683,21 @@
   </div>
 </div>
 
+<!-- ═══ OVERWRITE WARNING MODAL ═══ -->
+<div class="ow-overlay" id="ow-modal" style="display:none">
+  <div class="ow-box">
+    <div class="ow-header">⚠ Overwrite Warning</div>
+    <div class="ow-body">
+      <p id="ow-message"></p>
+      <div class="ow-conflicts" id="ow-conflicts"></div>
+      <div class="ow-btns">
+        <button class="ow-btn-cancel" onclick="owCancel()">✕ Cancel</button>
+        <button class="ow-btn-proceed" onclick="owProceed()">Overwrite & Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -681,6 +719,7 @@ let lastBackup  = localStorage.getItem('dc_last_backup')||null;
 let gpsCity     = null;   // detected GPS city
 let mapView     = 'countries';
 let mapPeriod   = 'cal';
+let mapYear     = null;       // null = current year, set to specific year for historical
 let leafletMap  = null;
 let mapMarkers  = null;
 
@@ -862,6 +901,9 @@ function dismissGPSCard() {
 function setMapPeriod(p) {
   mapPeriod = p;
   ['cal','tax','all'].forEach(x => document.getElementById('map-period-'+x).classList.toggle('active', x===p));
+  // Reset to current year when changing period
+  mapYear = null;
+  renderMapYearNav();
   renderMap();
 }
 
@@ -872,12 +914,66 @@ function setMapView(v) {
   renderMap();
 }
 
+function getDataYears() {
+  // Return sorted list of years that have any data
+  return [...new Set(entries.map(e => parseInt(e.date.substring(0,4))))].sort();
+}
+
+function renderMapYearNav() {
+  const nav = document.getElementById('map-year-nav');
+  const chips = document.getElementById('map-year-chips');
+  if (mapPeriod === 'all') {
+    nav.style.display = 'none';
+    return;
+  }
+  nav.style.display = 'flex';
+  const dataYears = getDataYears();
+  const today = new Date(todayStr()+'T12:00:00');
+  const curYr = today.getFullYear();
+  // For tax year, include years where tax year ending in that year has data
+  const activeYear = mapYear || curYr;
+  chips.innerHTML = dataYears.map(yr => {
+    const isActive = yr === activeYear;
+    const isCurrent = yr === curYr;
+    return `<button class="map-yr-chip${isActive?' active':''}" onclick="setMapYear(${yr})">${yr}${isCurrent?' ★':''}</button>`;
+  }).join('');
+  // Scroll active chip into view
+  setTimeout(() => {
+    const active = chips.querySelector('.active');
+    if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+  }, 50);
+}
+
+function setMapYear(yr) {
+  mapYear = yr;
+  renderMapYearNav();
+  renderMap();
+}
+
+function mapYearStep(dir) {
+  const years = getDataYears();
+  if (!years.length) return;
+  const today = new Date(todayStr()+'T12:00:00');
+  const curYr = today.getFullYear();
+  const active = mapYear || curYr;
+  const idx = years.indexOf(active);
+  const newIdx = Math.max(0, Math.min(years.length-1, idx + dir));
+  setMapYear(years[newIdx]);
+}
+
 function getMapDateRange() {
   const today = new Date(todayStr()+'T12:00:00');
-  const yr    = today.getFullYear();
-  if (mapPeriod === 'cal') return { from:`${yr}-01-01`, to:`${yr}-12-31`, label:`Calendar ${yr}` };
-  if (mapPeriod === 'tax') return { from:`${yr-1}-03-01`, to:febEnd(yr), label:`Tax Year Mar ${yr-1}–Feb ${yr}` };
-  return { from:'2000-01-01', to:'2099-12-31', label:'All Time' };
+  const curYr = today.getFullYear();
+  const yr    = mapYear || curYr;
+  const isCurrent = yr === curYr;
+  if (mapPeriod === 'all') return { from:'2000-01-01', to:'2099-12-31', label:'All Time' };
+  if (mapPeriod === 'cal') {
+    const to = isCurrent ? todayStr() : `${yr}-12-31`;
+    return { from:`${yr}-01-01`, to, label:`${yr}${isCurrent?' YTD':''}` };
+  }
+  // Tax year: Mar (yr-1) → Feb yr
+  const to = isCurrent ? todayStr() : febEnd(yr);
+  return { from:`${yr-1}-03-01`, to, label:`Tax ${yr-1}–${String(yr).slice(2)}${isCurrent?' YTD':''}` };
 }
 
 function renderMap() {
@@ -1314,7 +1410,7 @@ function showScreen(id) {
   if(id==='settings')  renderFavsManage();
   if(id==='add')     { renderCommonDests('single'); renderCommonDests('range'); renderGPSCard(); }
   if(id==='export')    checkBackupReminder();
-  if(id==='map')       renderMap();
+  if(id==='map')     { renderMapYearNav(); renderMap(); }
 }
 
 function setMode(m) {
@@ -1804,49 +1900,109 @@ function updateRangeInfo() {
 }
 
 // ═══════════════════════════════════════════════════════
+//  OVERWRITE WARNING
+// ═══════════════════════════════════════════════════════
+let owCallback = null;  // function to call if user confirms overwrite
+
+function checkOverwrites(dates) {
+  // Returns array of existing entries that would be overwritten
+  return dates
+    .map(d => entries.find(e => e.date === d))
+    .filter(Boolean);
+}
+
+function showOverwriteWarning(conflicts, totalDates, proceedFn) {
+  owCallback = proceedFn;
+  const isRange = totalDates > 1;
+  document.getElementById('ow-message').innerHTML =
+    isRange
+      ? `You are about to save <b>${totalDates} nights</b>. This will overwrite <b>${conflicts.length} existing entr${conflicts.length===1?'y':'ies'}</b>:`
+      : `<b>${fmtDate(conflicts[0].date)}</b> already has an entry. Overwriting it will replace:`;
+  const rows = conflicts.slice(0,20).map(e =>
+    `<div class="ow-conflict-row">${fmtShort(e.date)} <span>${e.flag||''} ${e.type==='transit'?(e.route||'Transit'):e.city}, ${e.country}</span></div>`
+  ).join('');
+  document.getElementById('ow-conflicts').innerHTML =
+    rows + (conflicts.length > 20 ? `<div style="font-size:11px;color:var(--orange);padding-top:4px">…and ${conflicts.length-20} more</div>` : '');
+  document.getElementById('ow-modal').style.display = 'flex';
+}
+
+function owCancel() {
+  document.getElementById('ow-modal').style.display = 'none';
+  owCallback = null;
+  showToast('Cancelled — nothing changed');
+}
+
+function owProceed() {
+  document.getElementById('ow-modal').style.display = 'none';
+  if (owCallback) { owCallback(); owCallback = null; }
+}
+
+// ═══════════════════════════════════════════════════════
 //  SAVE / DELETE
 // ═══════════════════════════════════════════════════════
 function saveSingle() {
-  const date=document.getElementById('single-date').value;
-  if(!date){showToast('⚠ Select a date');return;}
-  if(!selectedCity.single){showToast('⚠ Select a city first');return;}
-  const source = date > todayStr() ? 'future' : 'manual';
-  entries=entries.filter(e=>e.date!==date);
-  entries.push({date,type:'night',source,...selectedCity.single});
-  persist(); showToast(`✓ ${fmtShort(date)} — ${selectedCity.single.city}`);
-  selectedCity.single=null;
-  document.getElementById('city-search').value='';
-  document.getElementById('selected-city-single').innerHTML='';
-  const d=new Date(date+'T12:00:00'); d.setDate(d.getDate()+1);
-  document.getElementById('single-date').value=d.toISOString().split('T')[0];
+  const date = document.getElementById('single-date').value;
+  if (!date) { showToast('⚠ Select a date'); return; }
+  if (!selectedCity.single) { showToast('⚠ Select a city first'); return; }
+  const conflicts = checkOverwrites([date]);
+  const doSave = () => {
+    const source = date > todayStr() ? 'future' : 'manual';
+    entries = entries.filter(e => e.date !== date);
+    entries.push({ date, type:'night', source, ...selectedCity.single });
+    persist();
+    showToast(`✓ ${fmtShort(date)} — ${selectedCity.single.city}`);
+    selectedCity.single = null;
+    document.getElementById('city-search').value = '';
+    document.getElementById('selected-city-single').innerHTML = '';
+    const d = new Date(date+'T12:00:00'); d.setDate(d.getDate()+1);
+    document.getElementById('single-date').value = d.toISOString().split('T')[0];
+  };
+  if (conflicts.length) showOverwriteWarning(conflicts, 1, doSave);
+  else doSave();
 }
 
 function saveRange() {
-  const from=document.getElementById('range-from').value, to=document.getElementById('range-to').value;
-  if(!from||!to){showToast('⚠ Select dates');return;}
-  if(!selectedCity.range){showToast('⚠ Select a city first');return;}
-  let cur=new Date(from+'T12:00:00'), end=new Date(to+'T12:00:00'), count=0;
-  while(cur<=end){
-    const ds=cur.toISOString().split('T')[0];
-    const source = ds > todayStr() ? 'future' : 'manual';
-    entries=entries.filter(e=>e.date!==ds);
-    entries.push({date:ds,type:'night',source,...selectedCity.range});
-    cur.setDate(cur.getDate()+1); count++;
-  }
-  persist(); showToast(`✓ ${count} nights in ${selectedCity.range.city}`);
-  selectedCity.range=null;
-  document.getElementById('city-search-range').value='';
-  document.getElementById('selected-city-range').innerHTML='';
-  document.getElementById('range-info').style.display='none';
+  const from = document.getElementById('range-from').value;
+  const to   = document.getElementById('range-to').value;
+  if (!from || !to) { showToast('⚠ Select dates'); return; }
+  if (!selectedCity.range) { showToast('⚠ Select a city first'); return; }
+  // Build full list of dates in range
+  const dates = [];
+  let cur = new Date(from+'T12:00:00'), end = new Date(to+'T12:00:00');
+  while (cur <= end) { dates.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate()+1); }
+  const conflicts = checkOverwrites(dates);
+  const doSave = () => {
+    dates.forEach(ds => {
+      const source = ds > todayStr() ? 'future' : 'manual';
+      entries = entries.filter(e => e.date !== ds);
+      entries.push({ date:ds, type:'night', source, ...selectedCity.range });
+    });
+    persist();
+    showToast(`✓ ${dates.length} nights in ${selectedCity.range.city}`);
+    selectedCity.range = null;
+    document.getElementById('city-search-range').value = '';
+    document.getElementById('selected-city-range').innerHTML = '';
+    document.getElementById('range-info').style.display = 'none';
+    document.getElementById('range-cal-wrap').style.display = 'none';
+  };
+  if (conflicts.length) showOverwriteWarning(conflicts, dates.length, doSave);
+  else doSave();
 }
 
 function saveTravel() {
-  const date=document.getElementById('travel-date').value, route=document.getElementById('travel-route').value.trim()||'In transit';
-  if(!date){showToast('⚠ Select a date');return;}
-  const source = date > todayStr() ? 'future' : 'manual';
-  entries=entries.filter(e=>e.date!==date);
-  entries.push({date,type:'transit',source,city:'Transit',country:'Transit',countryCode:'TR',flag:'✈',route});
-  persist(); showToast(`✓ Transit — ${fmtShort(date)}`);
+  const date  = document.getElementById('travel-date').value;
+  const route = document.getElementById('travel-route').value.trim() || 'In transit';
+  if (!date) { showToast('⚠ Select a date'); return; }
+  const conflicts = checkOverwrites([date]);
+  const doSave = () => {
+    const source = date > todayStr() ? 'future' : 'manual';
+    entries = entries.filter(e => e.date !== date);
+    entries.push({ date, type:'transit', source, city:'Transit', country:'Transit', countryCode:'TR', flag:'✈', route });
+    persist();
+    showToast(`✓ Transit — ${fmtShort(date)}`);
+  };
+  if (conflicts.length) showOverwriteWarning(conflicts, 1, doSave);
+  else doSave();
 }
 
 function deleteEntry(date) {
