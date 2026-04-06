@@ -1820,27 +1820,31 @@ function renderRangeCalendar() {
   if (!from) { wrap.style.display='none'; return; }
   wrap.style.display='block';
 
-  // Show the month containing 'from', and if 'to' is in a different month show both
-  const fromDt = new Date(from+'T12:00:00');
-  const toDt   = to ? new Date(to+'T12:00:00') : null;
-  const today  = todayStr();
-
-  // Build calendar for from's month (and next month if range spans)
-  const months = [{ year: fromDt.getFullYear(), month: fromDt.getMonth() }];
-  if (toDt && (toDt.getFullYear()!==fromDt.getFullYear() || toDt.getMonth()!==fromDt.getMonth())) {
-    months.push({ year: toDt.getFullYear(), month: toDt.getMonth() });
+  // Parse date parts DIRECTLY from the YYYY-MM-DD string — never use new Date() for this.
+  // new Date('YYYY-MM-DD') parses as UTC midnight and can shift the month/day in local time.
+  function parseParts(ds) {
+    const [y, m, d] = ds.split('-').map(Number);
+    return { year: y, month: m - 1, day: d }; // month is 0-indexed
   }
 
-  const entryDates = new Set(entries.map(e=>e.date));
+  const fp   = parseParts(from);
+  const tp   = to ? parseParts(to) : null;
+  const today = todayStr();
+
+  // Which months to show
+  const months = [{ year: fp.year, month: fp.month }];
+  if (tp && (tp.year !== fp.year || tp.month !== fp.month)) {
+    months.push({ year: tp.year, month: tp.month });
+  }
+
+  const entryDates = new Set(entries.map(e => e.date));
   const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
   let calHTML = '';
-  months.forEach(({year, month}) => {
-    // Use local time throughout — avoid UTC midnight shifting
-    const firstOfMonth = new Date(year, month, 1);
-    const firstDay     = firstOfMonth.getDay(); // 0=Sun — local time, safe
-    const daysInMonth  = new Date(year, month+1, 0).getDate();
-    const monthLabel   = firstOfMonth.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  months.forEach(({ year, month }) => {
+    const firstDay    = new Date(year, month, 1).getDay(); // local — fine, no date string involved
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthLabel  = new Date(year, month, 1).toLocaleDateString('en-GB', { month:'long', year:'numeric' });
 
     calHTML += `<div style="padding:0">`;
     if (months.length > 1) {
@@ -1848,20 +1852,23 @@ function renderRangeCalendar() {
     }
     calHTML += `<div class="range-cal">`;
     DAYS.forEach(d => { calHTML += `<div class="range-cal-dow">${d}</div>`; });
-    for (let i=0; i<firstDay; i++) calHTML += `<div class="range-cal-day empty"></div>`;
-    for (let d=1; d<=daysInMonth; d++) {
-      // Build YYYY-MM-DD using local parts — no UTC conversion
-      const mm = String(month+1).padStart(2,'0');
-      const dd = String(d).padStart(2,'0');
+    for (let i = 0; i < firstDay; i++) calHTML += `<div class="range-cal-day empty"></div>`;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      // Build ds purely by string arithmetic — zero UTC ambiguity
+      const mm = String(month + 1).padStart(2, '0');
+      const dd = String(d).padStart(2, '0');
       const ds = `${year}-${mm}-${dd}`;
-      // Day-of-week from local date object — avoids UTC shift
-      const dow        = new Date(year, month, d).getDay();
-      const isStart    = ds === from;
-      const isEnd      = to && ds === to;
-      const inRange    = from && to && ds > from && ds < to;
-      const isToday    = ds === today;
-      const hasEntry   = entryDates.has(ds);
-      const isWeekend  = dow === 0 || dow === 6;
+
+      // dow from local constructor (year, month, day) — no string parsing
+      const dow       = new Date(year, month, d).getDay();
+      const isStart   = ds === from;           // pure string compare — always correct
+      const isEnd     = to && ds === to;
+      const inRange   = from && to && ds > from && ds < to;
+      const isToday   = ds === today;
+      const hasEntry  = entryDates.has(ds);
+      const isWeekend = dow === 0 || dow === 6;
+
       let cls = 'range-cal-day';
       if (isStart)  cls += ' range-start';
       if (isEnd)    cls += ' range-end';
@@ -1876,14 +1883,18 @@ function renderRangeCalendar() {
 
   document.getElementById('range-cal-grid').innerHTML = calHTML;
 
-  // Update header
-  const fromLabel = from ? new Date(from+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '–';
-  const toLabel   = to   ? new Date(to+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : 'select end date →';
+  // Header labels — safe to use T12:00:00 here since it's only for display text
+  const fromLabel = new Date(from + 'T12:00:00').toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  const toLabel   = to ? new Date(to + 'T12:00:00').toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : 'select end date →';
   document.getElementById('range-cal-title').textContent = `${fromLabel}  →  ${toLabel}`;
 
   if (from && to) {
-    const n = Math.max(0, Math.round((new Date(to+'T12:00:00')-new Date(from+'T12:00:00'))/86400000)+1);
-    document.getElementById('range-night-count').textContent = `${n} night${n!==1?'s':''}`;
+    // Night count: compare parsed parts to avoid UTC drift
+    const f = parseParts(from), t = parseParts(to);
+    const ms = new Date(f.year, f.month, f.day);
+    const me = new Date(t.year, t.month, t.day);
+    const n  = Math.max(0, Math.round((me - ms) / 86400000) + 1);
+    document.getElementById('range-night-count').textContent = `${n} night${n !== 1 ? 's' : ''}`;
   } else {
     document.getElementById('range-night-count').textContent = '';
   }
