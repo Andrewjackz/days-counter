@@ -1993,9 +1993,9 @@ function renderYoY() {
     return tb-ta;
   });
 
-  // Dynamic colour palette — always 5 colours, slice to yoyYears
-  const palette = ['#BBDEFB','#90CAF9','#64B5F6','#1E88E5','#0D47A1'];
-  const txtPal  = ['#1565C0','#1565C0','#1565C0','#fff','#fff'];
+  // Dynamic colour palette — 10 colours, slice to yoyYears
+  const palette = ['#E3F2FD','#BBDEFB','#90CAF9','#64B5F6','#42A5F5','#2196F3','#1E88E5','#1976D2','#1565C0','#0D47A1'];
+  const txtPal  = ['#1565C0','#1565C0','#1565C0','#1565C0','#1565C0','#fff','#fff','#fff','#fff','#fff'];
   const colours = palette.slice(palette.length - yoyYears);
   const txtCols = txtPal.slice(txtPal.length - yoyYears);
 
@@ -2013,7 +2013,7 @@ function renderYoY() {
   // Year slider
   html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:var(--grey);border-radius:10px;padding:10px 14px">
     <span style="font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap">Years shown:</span>
-    <input type="range" min="2" max="5" value="${yoyYears}" step="1"
+    <input type="range" min="2" max="10" value="${yoyYears}" step="1"
       style="flex:1;accent-color:var(--blue)"
       oninput="setYoYYears(this.value)">
     <span id="yoy-years-val" style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--blue);min-width:28px">${yoyYears}yr${yoyYears>1?'s':''}</span>
