@@ -230,6 +230,46 @@
     font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ink2);white-space:nowrap;transition:all 0.2s}
   .gap-toggle.on{background:var(--orange-lt);border-color:#FFCC80;color:var(--orange)}
 
+  /* ── SEARCH PANEL ──────────────────────────── */
+  .search-panel{margin-bottom:10px}
+  .search-main-row{display:flex;gap:6px;align-items:center;margin-bottom:0}
+  .search-main-input{flex:1;padding:9px 12px 9px 34px;border:1.5px solid var(--grey2);border-radius:10px;
+    font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:#fff;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23B0BEC5' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:10px center;background-size:16px;
+    transition:border-color 0.2s}
+  .search-main-input:focus{border-color:var(--blue)}
+  .search-main-input.has-value{border-color:var(--blue);background-image:none;padding-left:12px}
+  .search-clear-btn{padding:9px 10px;border:1.5px solid var(--grey2);border-radius:10px;background:#fff;
+    font-size:14px;cursor:pointer;color:var(--ink2);line-height:1;display:none}
+  .search-clear-btn.show{display:block}
+  .search-expand-btn{padding:9px 10px;border:1.5px solid var(--grey2);border-radius:10px;background:#fff;
+    font-size:12px;font-weight:600;cursor:pointer;color:var(--ink2);font-family:'DM Sans',sans-serif;
+    white-space:nowrap;transition:all 0.2s}
+  .search-expand-btn.active{background:var(--blue-lt);border-color:var(--blue-md);color:var(--blue)}
+  .search-advanced{display:none;padding:10px;background:var(--grey);border-radius:10px;margin-top:8px}
+  .search-advanced.open{display:block}
+  .sa-label{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--ink2);margin-bottom:5px;display:block}
+  .sa-row{margin-bottom:10px}
+  .sa-row:last-child{margin-bottom:0}
+  .sa-date-row{display:flex;gap:6px}
+  .sa-date-row input{flex:1;padding:8px 10px;border:1.5px solid var(--grey2);border-radius:8px;
+    font-size:13px;font-family:'DM Mono',monospace;background:#fff;outline:none;transition:border-color 0.2s}
+  .sa-date-row input:focus{border-color:var(--blue)}
+  .sa-month-row{display:flex;gap:6px}
+  .sa-month-row select{flex:1;padding:8px 10px;border:1.5px solid var(--grey2);border-radius:8px;
+    font-size:13px;font-family:'DM Sans',sans-serif;background:#fff;outline:none;appearance:none;color:var(--ink)}
+  .sa-type-pills{display:flex;gap:5px;flex-wrap:wrap}
+  .sa-pill{padding:5px 11px;border-radius:20px;border:1.5px solid var(--grey2);background:#fff;
+    font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ink2);transition:all 0.15s}
+  .sa-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
+  .sa-pill.transit-pill.active{background:var(--yellow);border-color:#F9A825;color:#4A3900}
+  .search-results-summary{font-size:11px;color:var(--blue);font-weight:600;margin-top:8px;
+    padding:5px 8px;background:var(--blue-lt);border-radius:6px;display:none}
+  .search-results-summary.show{display:block}
+  .sa-apply-btn{width:100%;padding:9px;border:none;border-radius:8px;background:var(--blue);
+    color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px}
+
   /* ── DAY OF WEEK BADGE ─────────────────────── */
   .dow{display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;
     padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle}
@@ -382,9 +422,73 @@
   <div id="gap-banner" style="display:none"></div>
 
   <div class="card" style="padding:12px">
-    <div class="filter-bar">
-      <input type="text" id="hist-filter" placeholder="🔍 Filter city or country…" oninput="renderHistory()">
-      <button class="gap-toggle" id="gap-toggle-btn" onclick="toggleGapFilter()">⚠ Gaps</button>
+
+    <!-- Search Panel -->
+    <div class="search-panel" id="search-panel">
+
+      <!-- Main row: text input + clear + advanced toggle + gaps -->
+      <div class="search-main-row">
+        <input type="text" class="search-main-input" id="hist-filter"
+          placeholder="Search city, country, transit…"
+          oninput="onSearchInput()" autocomplete="off">
+        <button class="search-clear-btn" id="search-clear-btn" onclick="clearSearch()">✕</button>
+        <button class="search-expand-btn" id="search-expand-btn" onclick="toggleAdvancedSearch()">⚙ Filter</button>
+        <button class="gap-toggle" id="gap-toggle-btn" onclick="toggleGapFilter()">⚠ Gaps</button>
+      </div>
+
+      <!-- Advanced search panel -->
+      <div class="search-advanced" id="search-advanced">
+
+        <!-- Specific date -->
+        <div class="sa-row">
+          <span class="sa-label">📅 Specific Date</span>
+          <input type="date" class="form-input" id="sa-date" style="margin-bottom:0;font-size:13px;padding:8px 12px"
+            onchange="applyAdvancedSearch()">
+        </div>
+
+        <!-- Month + Year -->
+        <div class="sa-row">
+          <span class="sa-label">📆 Month / Year</span>
+          <div class="sa-month-row">
+            <select id="sa-month" onchange="applyAdvancedSearch()" style="flex:1.5">
+              <option value="">Any month</option>
+              <option value="01">January</option><option value="02">February</option>
+              <option value="03">March</option><option value="04">April</option>
+              <option value="05">May</option><option value="06">June</option>
+              <option value="07">July</option><option value="08">August</option>
+              <option value="09">September</option><option value="10">October</option>
+              <option value="11">November</option><option value="12">December</option>
+            </select>
+            <select id="sa-year" onchange="applyAdvancedSearch()">
+              <option value="">Any year</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Date range -->
+        <div class="sa-row">
+          <span class="sa-label">📏 Date Range</span>
+          <div class="sa-date-row">
+            <input type="date" id="sa-from" placeholder="From" onchange="applyAdvancedSearch()">
+            <input type="date" id="sa-to"   placeholder="To"   onchange="applyAdvancedSearch()">
+          </div>
+        </div>
+
+        <!-- Entry type filter -->
+        <div class="sa-row">
+          <span class="sa-label">🏷 Type</span>
+          <div class="sa-type-pills">
+            <button class="sa-pill active" id="sa-type-all"     onclick="setSaType('all')">All</button>
+            <button class="sa-pill"        id="sa-type-night"   onclick="setSaType('night')">🌙 Nights</button>
+            <button class="sa-pill transit-pill" id="sa-type-transit" onclick="setSaType('transit')">✈ Transit</button>
+          </div>
+        </div>
+
+        <button class="sa-apply-btn" onclick="clearAdvancedSearch()">✕ Clear All Filters</button>
+      </div>
+
+      <!-- Result summary badge -->
+      <div class="search-results-summary" id="search-summary"></div>
     </div>
     <div class="history-wrap">
       <table class="hist-table">
@@ -715,6 +819,14 @@ let modalPeriod = 'dec';
 let searchTimeout=null;
 let gapFilterOn = false;
 let histFilter  = '';
+// Advanced search state
+let saDate      = '';
+let saMonth     = '';
+let saYear      = '';
+let saFrom      = '';
+let saTo        = '';
+let saType      = 'all';
+let advSearchOpen = false;
 let lastBackup  = localStorage.getItem('dc_last_backup')||null;
 let gpsCity     = null;   // detected GPS city
 let mapView     = 'countries';
@@ -740,6 +852,7 @@ function init() {
   document.getElementById('report-year').addEventListener('input',  updateHints);
   document.getElementById('modal-year').addEventListener('input',   updateHints);
   renderHistory(); renderStats(); renderTodayStatus(); renderFavsManage();
+  initSearchYears();
   checkBackupReminder();
   detectGPSLocation();
 }
@@ -1235,6 +1348,125 @@ function renderGapBanner() {
 }
 
 // ═══════════════════════════════════════════════════════
+//  SEARCH FUNCTIONS
+// ═══════════════════════════════════════════════════════
+function initSearchYears() {
+  const sel = document.getElementById('sa-year');
+  if (!sel) return;
+  const years = [...new Set(entries.map(e => e.date.substring(0,4)))].sort((a,b)=>b-a);
+  sel.innerHTML = '<option value="">Any year</option>' +
+    years.map(y => `<option value="${y}">${y}</option>`).join('');
+}
+
+function onSearchInput() {
+  histFilter = document.getElementById('hist-filter').value;
+  const clearBtn = document.getElementById('search-clear-btn');
+  const input    = document.getElementById('hist-filter');
+  if (histFilter) {
+    clearBtn.classList.add('show');
+    input.classList.add('has-value');
+  } else {
+    clearBtn.classList.remove('show');
+    input.classList.remove('has-value');
+  }
+  renderHistory();
+}
+
+function clearSearch() {
+  document.getElementById('hist-filter').value = '';
+  histFilter = '';
+  document.getElementById('search-clear-btn').classList.remove('show');
+  document.getElementById('hist-filter').classList.remove('has-value');
+  renderHistory();
+}
+
+function toggleAdvancedSearch() {
+  advSearchOpen = !advSearchOpen;
+  document.getElementById('search-advanced').classList.toggle('open', advSearchOpen);
+  document.getElementById('search-expand-btn').classList.toggle('active', advSearchOpen);
+  if (advSearchOpen) initSearchYears();
+}
+
+function setSaType(t) {
+  saType = t;
+  ['all','night','transit'].forEach(x => document.getElementById('sa-type-'+x).classList.toggle('active', x===t));
+  renderHistory();
+}
+
+function applyAdvancedSearch() {
+  saDate  = document.getElementById('sa-date').value;
+  saMonth = document.getElementById('sa-month').value;
+  saYear  = document.getElementById('sa-year').value;
+  saFrom  = document.getElementById('sa-from').value;
+  saTo    = document.getElementById('sa-to').value;
+  renderHistory();
+}
+
+function clearAdvancedSearch() {
+  saDate = saMonth = saYear = saFrom = saTo = '';
+  saType = 'all';
+  document.getElementById('sa-date').value  = '';
+  document.getElementById('sa-month').value = '';
+  document.getElementById('sa-year').value  = '';
+  document.getElementById('sa-from').value  = '';
+  document.getElementById('sa-to').value    = '';
+  ['all','night','transit'].forEach(x => document.getElementById('sa-type-'+x).classList.toggle('active', x==='all'));
+  renderHistory();
+}
+
+function isAdvancedActive() {
+  return saDate || saMonth || saYear || saFrom || saTo || saType !== 'all';
+}
+
+function entryMatchesSearch(e) {
+  // Text filter (main input)
+  if (histFilter) {
+    const q   = histFilter.toLowerCase();
+    const city    = (e.city||'').toLowerCase();
+    const country = (e.country||'').toLowerCase();
+    const route   = (e.route||'').toLowerCase();
+    const date    = e.date; // YYYY-MM-DD
+    // Allow partial date match: "2024", "2024-03", "15 Apr", "Apr 2024"
+    const dateFormatted = fmtDate(e.date).toLowerCase();
+    const dateShort     = fmtShort(e.date).toLowerCase();
+    if (!city.includes(q) && !country.includes(q) && !route.includes(q) &&
+        !date.includes(q) && !dateFormatted.includes(q) && !dateShort.includes(q) &&
+        !(e.type==='transit' && 'transit'.includes(q))) return false;
+  }
+  // Specific date
+  if (saDate && e.date !== saDate) return false;
+  // Month filter
+  if (saMonth && e.date.substring(5,7) !== saMonth) return false;
+  // Year filter
+  if (saYear && e.date.substring(0,4) !== saYear) return false;
+  // Date range
+  if (saFrom && e.date < saFrom) return false;
+  if (saTo   && e.date > saTo)   return false;
+  // Type filter
+  if (saType === 'night'   && e.type !== 'night')   return false;
+  if (saType === 'transit' && e.type !== 'transit') return false;
+  return true;
+}
+
+function updateSearchSummary(count, total) {
+  const el = document.getElementById('search-summary');
+  const hasFilter = histFilter || isAdvancedActive();
+  if (!hasFilter) { el.classList.remove('show'); return; }
+  el.classList.add('show');
+  // Build description of active filters
+  const parts = [];
+  if (histFilter) parts.push(`"${histFilter}"`);
+  if (saDate)  parts.push(`date ${fmtDate(saDate)}`);
+  if (saMonth) parts.push(new Date(2000, parseInt(saMonth)-1, 1).toLocaleDateString('en-GB',{month:'long'}));
+  if (saYear)  parts.push(saYear);
+  if (saFrom && saTo)  parts.push(`${fmtShort(saFrom)}–${fmtShort(saTo)}`);
+  else if (saFrom) parts.push(`from ${fmtShort(saFrom)}`);
+  else if (saTo)   parts.push(`to ${fmtShort(saTo)}`);
+  if (saType !== 'all') parts.push(saType === 'transit' ? '✈ transit only' : '🌙 nights only');
+  el.textContent = `${count} result${count!==1?'s':''} for: ${parts.join(' · ')}`;
+}
+
+// ═══════════════════════════════════════════════════════
 //  HISTORY RENDER
 // ═══════════════════════════════════════════════════════
 function toggleGapFilter() {
@@ -1245,32 +1477,22 @@ function toggleGapFilter() {
 }
 
 function renderHistory() {
-  histFilter = document.getElementById('hist-filter').value.toLowerCase();
+  histFilter = document.getElementById('hist-filter')?.value || '';
   renderGapBanner();
   const tbody = document.getElementById('hist-body');
   const gaps  = findGaps();
+  const hasAnyFilter = histFilter || isAdvancedActive();
 
-  // Build a sorted list including gap placeholders
-  const sorted = [...entries].sort((a,b)=>b.date.localeCompare(a.date)); // newest first
-
-  // Create set of gap ranges for fast lookup
+  const sorted = [...entries].sort((a,b)=>b.date.localeCompare(a.date));
   const gapSet = new Set();
-  gaps.forEach(g => {
-    let d = g.start;
-    while (d <= g.end) { gapSet.add(d); d = addDays(d,1); }
+  gaps.forEach(g => { let d=g.start; while(d<=g.end){gapSet.add(d);d=addDays(d,1);} });
+
+  let displayed = sorted.filter(e => {
+    if (gapFilterOn) return false;
+    return entryMatchesSearch(e);
   });
 
-  // Filter entries
-  let displayed = sorted.filter(e => {
-    if (histFilter) {
-      const city    = (e.city||'').toLowerCase();
-      const country = (e.country||'').toLowerCase();
-      const route   = (e.route||'').toLowerCase();
-      if (!city.includes(histFilter) && !country.includes(histFilter) && !route.includes(histFilter)) return false;
-    }
-    if (gapFilterOn) return false; // when gap filter is on, show only gap rows
-    return true;
-  });
+  updateSearchSummary(displayed.length, entries.length);
 
   // When gap filter is on, show only gap days
   if (gapFilterOn) {
@@ -1406,7 +1628,7 @@ function showScreen(id) {
     if(x===id) document.querySelectorAll('.tab')[i].classList.add('active');
   });
   if(id==='stats')    renderStats();
-  if(id==='log')     { renderHistory(); renderTodayStatus(); }
+  if(id==='log')     { initSearchYears(); renderHistory(); renderTodayStatus(); }
   if(id==='settings')  renderFavsManage();
   if(id==='add')     { renderCommonDests('single'); renderCommonDests('range'); renderGPSCard(); }
   if(id==='export')    checkBackupReminder();
