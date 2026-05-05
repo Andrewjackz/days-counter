@@ -597,11 +597,33 @@
   <div class="card">
     <div class="card-title">Period</div>
     <div class="year-tabs">
-      <button class="year-tab active" id="ytab-ytd" onclick="setStatYear('ytd')">Cal YTD</button>
-      <button class="year-tab" id="ytab-feb" onclick="setStatYear('feb')">YE 28 Feb</button>
-      <button class="year-tab" id="ytab-all" onclick="setStatYear('all')">All Time</button>
-      <button class="year-tab" id="ytab-yoy" onclick="setStatYear('yoy')">📊 Year vs Year</button>
+      <button class="year-tab active" id="ytab-ytd"    onclick="setStatYear('ytd')">Cal YTD</button>
+      <button class="year-tab"        id="ytab-feb"    onclick="setStatYear('feb')">YE 28 Feb</button>
+      <button class="year-tab"        id="ytab-s2p"    onclick="setStatYear('s2p')">Start → Now</button>
+      <button class="year-tab"        id="ytab-all"    onclick="setStatYear('all')">All Time</button>
+      <button class="year-tab"        id="ytab-custom" onclick="setStatYear('custom')">📐 Custom</button>
+      <button class="year-tab"        id="ytab-yoy"    onclick="setStatYear('yoy')">📊 YoY</button>
     </div>
+
+    <!-- Custom date range picker — shown only when custom tab active -->
+    <div id="custom-period-picker" style="display:none;margin-bottom:12px">
+      <div style="display:flex;gap:8px;align-items:center;background:var(--grey);border-radius:10px;padding:10px 12px">
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--ink2);margin-bottom:4px">From</div>
+          <input type="date" id="custom-from" class="form-input" style="margin-bottom:0;font-size:13px;padding:7px 10px" onchange="applyCustomPeriod()">
+        </div>
+        <div style="font-size:18px;color:var(--grey3);padding-top:18px">→</div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--ink2);margin-bottom:4px">To</div>
+          <input type="date" id="custom-to" class="form-input" style="margin-bottom:0;font-size:13px;padding:7px 10px" onchange="applyCustomPeriod()">
+        </div>
+        <div style="padding-top:18px">
+          <button onclick="setCustomToToday()" style="padding:7px 10px;border-radius:8px;border:1.5px solid var(--blue-md);background:var(--blue-lt);color:var(--blue);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">→ Today</button>
+        </div>
+      </div>
+      <div id="custom-period-label" style="font-size:11px;color:var(--ink2);padding:4px 2px;display:none"></div>
+    </div>
+
     <div id="stats-content"></div>
   </div>
 </div>
@@ -2257,6 +2279,49 @@ function setStatYear(y) {
   ['ytd','feb','all','yoy'].forEach(x=>document.getElementById('ytab-'+x).classList.toggle('active',x===y));
   renderStats();
 }
+let customFrom = '';
+let customTo   = '';
+
+function setStatYear(y) {
+  statYear = y;
+  ['ytd','feb','s2p','all','custom','yoy'].forEach(x => {
+    const el = document.getElementById('ytab-'+x);
+    if (el) el.classList.toggle('active', x===y);
+  });
+  // Show/hide custom picker
+  const picker = document.getElementById('custom-period-picker');
+  if (picker) picker.style.display = y==='custom' ? 'block' : 'none';
+  renderStats();
+}
+
+function applyCustomPeriod() {
+  customFrom = document.getElementById('custom-from').value;
+  customTo   = document.getElementById('custom-to').value;
+  updateCustomLabel();
+  renderStats();
+}
+
+function setCustomToToday() {
+  document.getElementById('custom-to').value = todayStr();
+  customTo = todayStr();
+  updateCustomLabel();
+  renderStats();
+}
+
+function updateCustomLabel() {
+  const lbl = document.getElementById('custom-period-label');
+  if (!lbl) return;
+  if (customFrom && customTo) {
+    const f = new Date(customFrom+'T12:00:00');
+    const t = new Date(customTo+'T12:00:00');
+    const days = Math.max(0, Math.round((t-f)/86400000)+1);
+    lbl.style.display = 'block';
+    lbl.textContent = `${fmtDate(customFrom)} → ${fmtDate(customTo)} · ${days} day${days!==1?'s':''}`;
+  } else {
+    lbl.style.display = 'none';
+  }
+}
+
 function calcStats(from,to) {
   const filtered=entries.filter(e=>e.date>=from&&e.date<=to);
   const total=filtered.length, transit=filtered.filter(e=>e.type==='transit').length;
@@ -2270,66 +2335,148 @@ function calcStats(from,to) {
   });
   return {filtered,total,transit,byCo,byCity};
 }
+
 function getRange(mode) {
-  const today=new Date(todayStr()+'T12:00:00'), y=today.getFullYear();
-  const m=mode||statYear;
-  if(m==='ytd') return {from:`${y}-01-01`,to:todayStr()};
-  if(m==='feb') return {from:`${y-1}-03-01`,to:febEnd(y)};
-  if(m==='dec') return {from:`${y}-01-01`,to:`${y}-12-31`};
-  return {from:'2000-01-01',to:'2099-12-31'};
+  const today = new Date(todayStr()+'T12:00:00'), y = today.getFullYear();
+  const m = mode || statYear;
+  if (m==='ytd')    return {from:`${y}-01-01`, to:todayStr()};
+  if (m==='feb')    return {from:`${y-1}-03-01`, to:febEnd(y)};
+  if (m==='dec')    return {from:`${y}-01-01`, to:`${y}-12-31`};
+  if (m==='all')    return {from:'2000-01-01', to:'2099-12-31'};
+  if (m==='custom') {
+    const f = customFrom || '2000-01-01';
+    const t = customTo   || todayStr();
+    return {from:f, to:t};
+  }
+  if (m==='s2p') {
+    // Start of data to today
+    const sorted = entries.map(e=>e.date).sort();
+    const first  = sorted[0] || todayStr();
+    return {from:first, to:todayStr()};
+  }
+  return {from:'2000-01-01', to:'2099-12-31'};
 }
+
 function renderStats() {
   if (statYear === 'yoy') {
-    // Hide summary tiles for YoY view — it has its own header
     document.getElementById('summary-grid').innerHTML = '';
     renderYoY();
     return;
   }
-  const {from,to}=getRange();
-  const {total,transit,byCo,byCity}=calcStats(from,to);
-  const cntN=total-transit, nCo=Object.keys(byCo).length;
+  if (statYear === 'custom' && (!customFrom || !customTo)) {
+    document.getElementById('summary-grid').innerHTML = '';
+    document.getElementById('stats-content').innerHTML =
+      `<div class="info-box">📐 Select a start and end date above to view custom period stats</div>`;
+    return;
+  }
+  const {from,to} = getRange();
+  const {total,transit,byCo,byCity} = calcStats(from,to);
+  const cntN = total-transit, nCo = Object.keys(byCo).length;
+
+  // Period label
+  let periodLabel = '';
+  if (statYear==='ytd')    periodLabel = `1 Jan ${new Date(todayStr()+'T12:00:00').getFullYear()} → Today`;
+  else if (statYear==='feb') periodLabel = `1 Mar ${new Date(todayStr()+'T12:00:00').getFullYear()-1} → ${febEndDay(new Date(todayStr()+'T12:00:00').getFullYear())} Feb`;
+  else if (statYear==='s2p') periodLabel = `${fmtDate(from)} → Today`;
+  else if (statYear==='custom') periodLabel = `${fmtDate(from)} → ${fmtDate(to)}`;
+  else if (statYear==='all') periodLabel = 'All Time';
+
+  // Days in period (for density calc)
+  const periodDays = Math.max(1, Math.round((new Date(to+'T12:00:00')-new Date(from+'T12:00:00'))/86400000)+1);
+  const coverage   = Math.round(total/periodDays*100);
+
   document.getElementById('summary-grid').innerHTML=`
     <div class="summary-tile"><div class="big">${total}</div><div class="lbl">Total Nights</div></div>
     <div class="summary-tile"><div class="big" style="color:var(--green)">${cntN}</div><div class="lbl">Country Nights</div></div>
     <div class="summary-tile"><div class="big" style="color:var(--yellow)">${transit}</div><div class="lbl">Transit</div></div>
     <div class="summary-tile"><div class="big" style="color:var(--red)">${nCo}</div><div class="lbl">Countries</div></div>`;
-  const thr=total>0?Math.ceil(total*0.1):1;
-  let html=statYear!=='all'?`<div class="info-box" style="font-size:12px">${fmtDate(from)} → ${fmtDate(to)}</div>`:'';
-  const coS=Object.entries(byCo).sort((a,b)=>b[1].nights-a[1].nights);
-  html+=`<div class="section-header">Countries</div>`;
-  if(!coS.length){html+=`<div style="font-size:13px;color:var(--ink2);padding:8px 0">No data for this period</div>`;}
-  else{
-    const mx=coS[0][1].nights;
-    coS.forEach(([co,d])=>{
-      const pct=total>0?Math.round(d.nights/total*100):0;
-      html+=`<div class="stat-row" style="${d.nights<thr?'opacity:0.5':''}">
+
+  const thr = total>0 ? Math.ceil(total*0.1) : 1;
+  let html = '';
+
+  // Period info bar
+  if (statYear!=='all') {
+    const durStr = periodDays >= 365
+      ? `${(periodDays/365).toFixed(1)} yrs`
+      : `${periodDays} days`;
+    html += `<div class="info-box" style="font-size:12px;display:flex;justify-content:space-between;align-items:center">
+      <span>${periodLabel}</span>
+      <span style="font-family:'DM Mono',monospace;font-weight:700">${durStr} · ${coverage}% logged</span>
+    </div>`;
+  }
+
+  // Countries
+  const coS = Object.entries(byCo).sort((a,b)=>b[1].nights-a[1].nights);
+  html += `<div class="section-header">Countries</div>`;
+  if (!coS.length) {
+    html += `<div style="font-size:13px;color:var(--ink2);padding:8px 0">No data for this period</div>`;
+  } else {
+    const mx = coS[0][1].nights;
+    coS.forEach(([co,d]) => {
+      const pct = total>0 ? Math.round(d.nights/total*100) : 0;
+      html += `<div class="stat-row" style="${d.nights<thr?'opacity:0.5':''}">
         <div class="stat-label">${d.flag} <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${co}</span></div>
         <div style="display:flex;align-items:center;gap:6px">
           <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(d.nights/mx*100)}%;background:var(--blue)"></div></div>
-          <span class="stat-val" style="color:var(--blue)">${d.nights}n</span><span class="pct-badge">${pct}%</span>
+          <span class="stat-val" style="color:var(--blue)">${d.nights}n</span>
+          <span class="pct-badge">${pct}%</span>
         </div></div>`;
     });
-    if(transit>0) html+=`<div class="stat-row"><div class="stat-label">✈ <span>Transit</span></div>
+    if (transit>0) html += `<div class="stat-row">
+      <div class="stat-label">✈ <span>Transit</span></div>
       <div style="display:flex;align-items:center;gap:6px">
         <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(transit/mx*100)}%;background:var(--yellow)"></div></div>
-        <span class="stat-val" style="color:var(--yellow)">${transit}n</span><span class="pct-badge">${Math.round(transit/total*100)}%</span>
+        <span class="stat-val" style="color:var(--yellow)">${transit}n</span>
+        <span class="pct-badge">${Math.round(transit/total*100)}%</span>
       </div></div>`;
   }
-  const cityS=Object.values(byCity).sort((a,b)=>b.nights-a.nights).filter(c=>c.nights>=thr);
-  if(cityS.length){
-    html+=`<div class="section-header" style="margin-top:16px">Cities ≥${thr}n (10% threshold)</div>`;
-    const mx=cityS[0].nights;
-    cityS.forEach(c=>{
-      const pct=total>0?Math.round(c.nights/total*100):0;
-      html+=`<div class="stat-row">
+
+  // Cities (10% threshold)
+  const cityS = Object.values(byCity).sort((a,b)=>b.nights-a.nights).filter(c=>c.nights>=thr);
+  if (cityS.length) {
+    html += `<div class="section-header" style="margin-top:16px">Cities ≥${thr}n (10% threshold)</div>`;
+    const mx = cityS[0].nights;
+    cityS.forEach(c => {
+      const pct = total>0 ? Math.round(c.nights/total*100) : 0;
+      html += `<div class="stat-row">
         <div class="stat-label">${c.flag} <span>${c.city}</span></div>
         <div style="display:flex;align-items:center;gap:6px">
           <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(c.nights/mx*100)}%;background:var(--green)"></div></div>
-          <span class="stat-val" style="color:var(--green)">${c.nights}n</span><span class="pct-badge">${pct}%</span>
+          <span class="stat-val" style="color:var(--green)">${c.nights}n</span>
+          <span class="pct-badge">${pct}%</span>
         </div></div>`;
     });
   }
-  document.getElementById('stats-content').innerHTML=html;
+
+  // For custom/s2p periods: also show monthly breakdown
+  if ((statYear==='custom'||statYear==='s2p') && total>0) {
+    html += `<div class="section-header" style="margin-top:16px">Monthly Breakdown</div>`;
+    // Group by YYYY-MM
+    const byMonth = {};
+    entries.filter(e=>e.date>=from&&e.date<=to&&e.type!=='transit').forEach(e=>{
+      const k = e.date.substring(0,7);
+      if (!byMonth[k]) byMonth[k] = {nights:0,countries:{}};
+      byMonth[k].nights++;
+      byMonth[k].countries[e.country]=(byMonth[k].countries[e.country]||0)+1;
+    });
+    const months = Object.keys(byMonth).sort();
+    const mxM = Math.max(...months.map(m=>byMonth[m].nights),1);
+    months.forEach(m=>{
+      const d = byMonth[m];
+      const topCo = Object.entries(d.countries).sort((a,b)=>b[1]-a[1])[0];
+      const label = new Date(m+'-15').toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+      const barW  = Math.round(d.nights/mxM*100);
+      html += `<div class="stat-row">
+        <div class="stat-label" style="min-width:70px;font-family:'DM Mono',monospace;font-size:11px">${label}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex:1">
+          <div class="bar-bg" style="width:100%"><div class="bar-fill" style="width:${barW}%;background:var(--blue)"></div></div>
+          <span class="stat-val" style="color:var(--blue)">${d.nights}n</span>
+          <span style="font-size:10px;color:var(--ink2);min-width:60px;text-align:right">${topCo?topCo[0].substring(0,8):''}</span>
+        </div></div>`;
+    });
+  }
+
+  document.getElementById('stats-content').innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════
