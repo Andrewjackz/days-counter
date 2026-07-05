@@ -1786,26 +1786,63 @@ async function onCitySearch(val, mode) {
 }
 
 async function searchCity(query, mode) {
-  const container=document.getElementById('search-results-'+mode);
-  container.innerHTML=`<div class="searching-indicator"><div class="dot-anim"><span></span><span></span><span></span></div> Searching…</div>`;
-  // Always show builtin matches immediately
-  const builtin=builtinSearch(query);
-  if(!apiKey){renderResults(builtin,mode);return;}
-  // If builtin has good matches (≥3), show them while waiting for AI
-  if(builtin.length>=3) renderResults(builtin,mode,true);
+  const container = document.getElementById('search-results-'+mode);
+  container.innerHTML = `<div class="searching-indicator"><div class="dot-anim"><span></span><span></span><span></span></div> Searching…</div>`;
+
+  // Always run builtin first — instant
+  const builtin = builtinSearch(query);
+
+  // No API key — fall back to builtin only
+  if (!apiKey) {
+    if (builtin.length) renderResults(builtin, mode);
+    else container.innerHTML = '<div class="searching-indicator" style="color:var(--ink2)">Not in built-in list — add your API key in ⚙ Settings for full global search</div>';
+    return;
+  }
+
+  // Show builtin matches immediately while AI fetches
+  if (builtin.length >= 3) renderResults(builtin, mode, true);
+
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:
-        `City lookup: "${query}". Return ONLY a JSON array, max 8 items: [{"city":"","country":"","countryCode":"ISO2","flag":"🇬🇧"}]. No markdown, no explanation.`
-      }]})
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        messages: [{ role: 'user', content:
+          `City lookup: "${query}". Return ONLY a JSON array, max 8 items: [{"city":"","country":"","countryCode":"ISO2","flag":"🇬🇧"}]. No markdown, no explanation.`
+        }]
+      })
     });
-    const d=await r.json();
-    const text=(d.content?.[0]?.text||'[]').replace(/```json|```/g,'').trim();
-    const results=JSON.parse(text);
-    renderResults(results.length?results:builtin, mode);
-  } catch(e){ renderResults(builtin,mode); }
+
+    if (!r.ok) {
+      // API error — show builtin results or helpful error
+      const errData = await r.json().catch(()=>({}));
+      const errMsg = errData?.error?.message || `API error ${r.status}`;
+      if (builtin.length) {
+        renderResults(builtin, mode);
+        showToast(`⚠ AI search error: ${errMsg.substring(0,60)}`);
+      } else {
+        container.innerHTML = `<div class="searching-indicator" style="color:var(--red)">⚠ ${errMsg.substring(0,80)} — check API key in ⚙ Settings</div>`;
+      }
+      return;
+    }
+
+    const d = await r.json();
+    const text = (d.content?.[0]?.text || '[]').replace(/```json|```/g,'').trim();
+    const results = JSON.parse(text);
+    renderResults(results.length ? results : builtin, mode);
+
+  } catch(e) {
+    // Network error or parse error
+    if (builtin.length) renderResults(builtin, mode);
+    else container.innerHTML = `<div class="searching-indicator" style="color:var(--orange)">⚠ Search unavailable — check connection. Try a major city name.</div>`;
+  }
 }
 
 function builtinSearch(q) {
